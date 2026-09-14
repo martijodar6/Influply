@@ -11,8 +11,7 @@ const url = process.env.DATABASE_URL || './dev.db';
 
 // Reuse the connection across hot reloads in dev so we don't leak file
 // handles / re-open the sqlite file on every module reload.
-const sqlite = global.__influplySqlite ?? new Database(url);
-sqlite.pragma('journal_mode = WAL');
+  const sqlite = global.__influplySqlite ?? (() => { try { return new Database(url); } catch { return new Database(':memory:'); } })();sqlite.pragma('journal_mode = WAL');
 sqlite.pragma('foreign_keys = ON');
 if (process.env.NODE_ENV !== 'production') {
   global.__influplySqlite = sqlite;
