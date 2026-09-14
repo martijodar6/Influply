@@ -6,8 +6,7 @@ import { listActiveCampaignCards, isFavorite } from '@/lib/queries';
 import { getCurrentUser } from '@/lib/session';
 
 export default async function CampaignsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
-  const [campaigns, user] = await Promise.all([listActiveCampaignCards(), getCurrentUser()]);
-
+  const [campaigns, user] = await Promise.all([listActiveCampaignCards().catch(() => []), getCurrentUser()]);
   const q = typeof searchParams.q === 'string' ? searchParams.q.toLowerCase() : '';
   const location = typeof searchParams.location === 'string' ? searchParams.location : '';
   const categories = ([] as string[]).concat((searchParams.category as string[] | string | undefined) ?? []);
