@@ -6,8 +6,7 @@ import { listCreatorCards, isFavorite } from '@/lib/queries';
 import { getCurrentUser } from '@/lib/session';
 
 export default async function CreatorsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
-  const [creators, user] = await Promise.all([listCreatorCards(), getCurrentUser()]);
-
+  const [creators, user] = await Promise.all([listCreatorCards().catch(() => []), getCurrentUser()]);
   const q = typeof searchParams.q === 'string' ? searchParams.q.toLowerCase() : '';
   const location = typeof searchParams.location === 'string' ? searchParams.location : '';
   const categories = ([] as string[]).concat((searchParams.category as string[] | string | undefined) ?? []);
