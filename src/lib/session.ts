@@ -1,0 +1,22 @@
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+
+export async function getCurrentUser() {
+  const session = await getServerSession(authOptions);
+  return session?.user ?? null;
+}
+
+/** Use at the top of a page/action that requires any signed-in user. */
+export async function requireUser() {
+  const user = await getCurrentUser();
+  if (!user) redirect('/login');
+  return user;
+}
+
+/** Use at the top of a page/action restricted to one role. */
+export async function requireRole(role: 'CREATOR' | 'COMPANY' | 'ADMIN') {
+  const user = await requireUser();
+  if (user.role !== role) redirect('/');
+  return user;
+}
