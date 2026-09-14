@@ -7,8 +7,7 @@ import { listActiveCampaignCards, listCreatorCards } from '@/lib/queries';
 import { LogoMark } from '@/components/logo';
 
 export default async function HomePage() {
-  const [campaigns, creators] = await Promise.all([listActiveCampaignCards(), listCreatorCards()]);
-
+  const [campaigns, creators] = await Promise.all([listActiveCampaignCards().catch(() => []), listCreatorCards().catch(() => [])]);
   return (
     <div className="min-h-screen bg-[#faf9ff]">
       <PublicNavbar />
