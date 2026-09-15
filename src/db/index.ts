@@ -1,21 +1,16 @@
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from './schema';
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __influplySqlite: Database.Database | undefined;
+const url = process.env.DATABASE_URL;
+if (!url) {
+  throw new Error('DATABASE_URL no está configurada. Añádela en .env (local) o en las variables de entorno de Vercel.');
 }
 
-const url = process.env.DATABASE_URL || './dev.db';
+// The Neon HTTP driver is stateless (each query is a fetch() call over
+// HTTPS), so unlike the old better-sqlite3 setup there's no file handle or
+// socket to cache across hot reloads — we just create the client once.
+const sql = neon(url);
 
-// Reuse the connection across hot reloads in dev so we don't leak file
-// handles / re-open the sqlite file on every module reload.
-  const sqlite = global.__influplySqlite ?? (() => { try { return new Database(url); } catch { return new Database(':memory:'); } })();sqlite.pragma('journal_mode = WAL');
-sqlite.pragma('foreign_keys = ON');
-if (process.env.NODE_ENV !== 'production') {
-  global.__influplySqlite = sqlite;
-}
-
-export const db = drizzle(sqlite, { schema });
+export const db = drizzle(sql, { schema });
 export type DB = typeof db;
