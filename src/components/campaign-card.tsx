@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/primitives';
 import { COMPENSATION_TYPE_LABEL } from '@/lib/constants';
 import type { CampaignCard as CampaignCardType } from '@/lib/queries';
 import { FavoriteButton } from '@/components/favorite-button';
+import { VerifiedBadge } from '@/components/verified-badge';
 
 export function CampaignCard({ campaign, isFavorite, canFavorite }: { campaign: CampaignCardType; isFavorite?: boolean; canFavorite?: boolean }) {
   return (
@@ -32,6 +33,7 @@ export function CampaignCard({ campaign, isFavorite, canFavorite }: { campaign: 
             </span>
           )}
           {campaign.company.name}
+          {campaign.company.verificationStatus === 'VERIFIED' && <VerifiedBadge size={13} />}
         </div>
         <h3 className="font-semibold text-ink-900 group-hover:text-brand-700">{campaign.title}</h3>
         <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 text-xs text-ink-500">
