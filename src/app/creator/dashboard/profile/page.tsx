@@ -2,9 +2,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { DashboardShell, creatorNavItems } from '@/components/dashboard-shell';
 import { Card, Field, Input, Select, Button, LinkButton, Badge } from '@/components/ui/primitives';
+import { SocialPlatformIcon } from '@/components/social-icons';
 import { requireCreatorProfile } from '@/lib/guards';
 import { parseArray } from '@/lib/json';
-import { SOCIAL_PLATFORMS, SOCIAL_PLATFORM_LABEL } from '@/lib/constants';
+import { getSocialProfileUrl } from '@/lib/social';
+import { SOCIAL_PLATFORMS, SOCIAL_PLATFORM_LABEL, type SocialPlatform } from '@/lib/constants';
 import { db } from '@/db';
 import { socialNetworks, portfolioItems } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -47,18 +49,32 @@ export default async function CreatorProfilePage() {
           <Card>
             <h2 className="mb-4 font-semibold text-ink-900">Redes sociales</h2>
             <div className="mb-4 flex flex-col gap-2">
-              {socials.map((s) => (
-                <div key={s.id} className="flex items-center justify-between rounded-xl2 border border-ink-100 px-3 py-2 text-sm">
-                  <span>
-                    <b>{SOCIAL_PLATFORM_LABEL[s.platform as keyof typeof SOCIAL_PLATFORM_LABEL] ?? s.platform}</b> · {s.handle}{' '}
-                    {s.followers ? `· ${s.followers.toLocaleString('es-ES')}` : ''}
-                  </span>
-                  <form action={deleteSocialNetwork.bind(null, s.id)}>
-                    <button className="text-xs font-medium text-red-600 hover:underline">Eliminar</button>
-                  </form>
-                </div>
-              ))}
-              {socials.length === 0 && <p className="text-sm text-ink-400">Aún no has añadido redes sociales.</p>}
+              {socials.map((s) => {
+      const platform = s.platform as SocialPlatform;
+      const url = getSocialProfileUrl(platform, s.handle);
+      return (
+        <div key={s.id} className="flex items-center justify-between rounded-xl2 border border-ink-100 px-3 py-2 text-sm">
+        <span className="flex items-center gap-2">
+        <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-brand-50 text-brand-700">
+        <SocialPlatformIcon platform={platform} size={13} />
+        </span>
+        <b>{SOCIAL_PLATFORM_LABEL[platform] ?? s.platform}</b> ·{' '}
+          {url ? (
+          <a href={url} target="_blank" rel="noreferrer" className="text-brand-700 hover:underline">
+            {s.handle}
+          </a>
+          ) : (
+          s.handle
+          )}{' '}
+          {s.followers ? `· ${s.followers.toLocaleString('es-ES')}` : ''}
+        </span>
+        <form action={deleteSocialNetwork.bind(null, s.id)}>
+        <button className="text-xs font-medium text-red-600 hover:underline">Eliminar</button>
+        </form>
+        </div>
+        );
+    })}
+            {socials.length === 0 && <p className="text-sm text-ink-400">Aún no has añadido redes sociales.</p>}
             </div>
             <form action={addSocialNetwork} className="grid grid-cols-3 gap-2">
               <Select name="platform" defaultValue="">
