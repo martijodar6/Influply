@@ -73,6 +73,10 @@ export const creatorNavItems: NavItem[] = [
   { href: '/creator/dashboard/settings', label: 'Configuración', icon: <IconSettings /> }
 ];
 
+export const adminNavItems: NavItem[] = [
+  { href: '/admin/verifications', label: 'Verificaciones', icon: <IconInbox /> }
+];
+
 export const companyNavItems: NavItem[] = [
   { href: '/company/dashboard', label: 'Inicio', icon: <IconHome /> },
   { href: '/company/dashboard/creators', label: 'Explorar creadores', icon: <IconUsers /> },
