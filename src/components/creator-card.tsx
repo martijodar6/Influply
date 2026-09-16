@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/primitives';
 import { FavoriteButton } from '@/components/favorite-button';
+import { VerifiedBadge } from '@/components/verified-badge';
 import type { CreatorCard as CreatorCardType } from '@/lib/queries';
 import { SOCIAL_PLATFORM_LABEL } from '@/lib/constants';
 
@@ -27,7 +28,10 @@ export function CreatorCard({ creator, isFavorite, canFavorite }: { creator: Cre
             {creator.avatarUrl && <Image src={creator.avatarUrl} alt={creator.displayName} fill className="object-cover" unoptimized />}
           </div>
           <div>
-            <div className="font-semibold text-ink-900 group-hover:text-brand-700">{creator.displayName}</div>
+            <div className="flex items-center gap-1.5 font-semibold text-ink-900 group-hover:text-brand-700">
+              {creator.displayName}
+              {creator.verificationStatus === 'VERIFIED' && <VerifiedBadge size={14} />}
+            </div>
             <div className="text-xs text-ink-500">@{creator.username}</div>
           </div>
         </div>
