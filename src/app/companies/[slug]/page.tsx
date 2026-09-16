@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PublicNavbar } from '@/components/public-navbar';
 import { Badge, Card } from '@/components/ui/primitives';
+import { VerifiedBadge } from '@/components/verified-badge';
 import { getCompanyDetailBySlug } from '@/lib/queries';
 
 export default async function CompanyProfilePage({ params }: { params: { slug: string } }) {
@@ -18,7 +19,10 @@ export default async function CompanyProfilePage({ params }: { params: { slug: s
             {company.logoUrl && <Image src={company.logoUrl} alt={company.name} fill className="object-cover" unoptimized />}
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-ink-900">{company.name}</h1>
+            <h1 className="flex items-center gap-2 text-2xl font-bold text-ink-900">
+              {company.name}
+              {company.verificationStatus === 'VERIFIED' && <VerifiedBadge size={18} />}
+            </h1>
             <p className="text-sm text-ink-500">
               {company.category} {company.city ? `· ${company.city}` : ''}
             </p>
