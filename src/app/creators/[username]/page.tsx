@@ -104,18 +104,43 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
           <div className="flex flex-col gap-4">
             <Card>
               <h2 className="mb-3 font-semibold text-ink-900">Redes sociales</h2>
-              <div className="flex flex-col gap-2">
-                {creator.socials.map((s) => (
-                  <div key={s.id} className="flex items-center justify-between text-sm">
-                    <span className="font-medium text-ink-900">{SOCIAL_PLATFORM_LABEL[s.platform as keyof typeof SOCIAL_PLATFORM_LABEL] ?? s.platform}</span>
-                    <span className="text-ink-500">
-                      {s.handle} {s.followers ? `· ${s.followers.toLocaleString('es-ES')}` : ''}
-                    </span>
-                  </div>
-                ))}
+              <div className="flex flex-col gap-1">
+                {creator.socials.map((s) => {
+      const platform = s.platform as SocialPlatform;
+      const label = SOCIAL_PLATFORM_LABEL[platform] ?? s.platform;
+      const url = getSocialProfileUrl(platform, s.handle);
+      const content = (
+        <>
+        <span className="flex items-center gap-2 font-medium text-ink-900">
+        <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-brand-50 text-brand-700">
+        <SocialPlatformIcon platform={platform} size={15} />
+        </span>
+          {label}
+        </span>
+        <span className="text-ink-500">
+          {s.handle} {s.followers ? `· ${s.followers.toLocaleString('es-ES')}` : ''}
+        </span>
+        </>
+        );
+      return url ? (
+        <a
+          key={s.id}
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="-mx-1.5 flex items-center justify-between rounded-lg px-1.5 py-1 text-sm transition-colors hover:bg-brand-50"
+          >
+          {content}
+        </a>
+        ) : (
+        <div key={s.id} className="-mx-1.5 flex items-center justify-between px-1.5 py-1 text-sm">
+          {content}
+        </div>
+        );
+    })}
                 {creator.socials.length === 0 && <p className="text-sm text-ink-400">Sin redes añadidas.</p>}
               </div>
-              {totalFollowers > 0 && (
+                          {totalFollowers > 0 && (
                 <div className="mt-3 border-t border-ink-100 pt-3 text-sm font-semibold text-ink-900">
                   {totalFollowers.toLocaleString('es-ES')} seguidores en total
                 </div>
