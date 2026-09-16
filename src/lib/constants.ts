@@ -121,6 +121,16 @@ export const CREATOR_CATEGORIES = [
 
 export const LANGUAGES = ['Español', 'Catalán', 'Inglés', 'Francés', 'Portugués', 'Italiano', 'Alemán'] as const;
 
+export const VERIFICATION_STATUS = ['UNVERIFIED', 'PENDING', 'VERIFIED', 'REJECTED'] as const;
+export type VerificationStatus = (typeof VERIFICATION_STATUS)[number];
+
+export const VERIFICATION_STATUS_LABEL: Record<VerificationStatus, string> = {
+  UNVERIFIED: 'Sin verificar',
+  PENDING: 'En revisión',
+  VERIFIED: 'Verificado',
+  REJECTED: 'Rechazado'
+};
+
 export const FAVORITE_TARGET_TYPES = ['CREATOR', 'CAMPAIGN'] as const;
 
 export const AUDIENCE_TYPES = ['General', 'Familias', 'Jóvenes 18-25', 'Profesionales', 'Deportistas', 'Foodies'] as const;
