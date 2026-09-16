@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { campaigns, companyProfiles, applications, creatorProfiles, favorites, socialNetworks, portfolioItems } from '@/db/schema';
+import { campaigns, companyProfiles, applications, creatorProfiles, favorites, socialNetworks, portfolioItems, users } from '@/db/schema';
 import { and, desc, eq, sql, inArray } from 'drizzle-orm';
 import { parseArray, parseObject, CampaignRequirements, ContentRequestedItem } from './json';
 
@@ -16,7 +16,7 @@ export type CampaignCard = {
   applicationDeadline: string | null;
   applicantCount: number;
   mainPlatform: string | null;
-  company: { name: string; slug: string; logoUrl: string | null; category: string };
+  company: { name: string; slug: string; logoUrl: string | null; category: string; verificationStatus: string };
 };
 
 /** All ACTIVE campaigns with their company + applicant count, newest first. Used by the public marketplace. */
@@ -37,7 +37,8 @@ export async function listActiveCampaignCards(): Promise<CampaignCard[]> {
       companyName: companyProfiles.name,
       companySlug: companyProfiles.slug,
       companyLogoUrl: companyProfiles.logoUrl,
-      companyCategory: companyProfiles.category
+      companyCategory: companyProfiles.category,
+      companyVerificationStatus: companyProfiles.verificationStatus
     })
     .from(campaigns)
     .innerJoin(companyProfiles, eq(campaigns.companyId, companyProfiles.id))
@@ -59,7 +60,7 @@ export async function listActiveCampaignCards(): Promise<CampaignCard[]> {
     applicationDeadline: r.applicationDeadline,
     applicantCount: counts.get(r.id) ?? 0,
     mainPlatform: parseObject<CampaignRequirements>(r.requirements, {}).mainPlatform ?? null,
-    company: { name: r.companyName, slug: r.companySlug, logoUrl: r.companyLogoUrl, category: r.companyCategory }
+    company: { name: r.companyName, slug: r.companySlug, logoUrl: r.companyLogoUrl, category: r.companyCategory, verificationStatus: r.companyVerificationStatus }
   }));
 }
 
@@ -138,6 +139,7 @@ export type CreatorCard = {
   city: string | null;
   categories: string[];
   topPhoto: string | null;
+  verificationStatus: string;
   socials: { platform: string; handle: string; followers: number | null }[];
 };
 
@@ -157,6 +159,7 @@ export async function listCreatorCards(): Promise<CreatorCard[]> {
     city: r.city,
     categories: parseArray<string>(r.categories),
     topPhoto: photos.find((p) => p.creatorId === r.id)?.url ?? null,
+    verificationStatus: r.verificationStatus,
     socials: socials
       .filter((s) => s.creatorId === r.id)
       .map((s) => ({ platform: s.platform, handle: s.handle, followers: s.followers }))
@@ -227,7 +230,8 @@ async function listActiveOrAnyCampaignCards(): Promise<CampaignCard[]> {
       companyName: companyProfiles.name,
       companySlug: companyProfiles.slug,
       companyLogoUrl: companyProfiles.logoUrl,
-      companyCategory: companyProfiles.category
+      companyCategory: companyProfiles.category,
+      companyVerificationStatus: companyProfiles.verificationStatus
     })
     .from(campaigns)
     .innerJoin(companyProfiles, eq(campaigns.companyId, companyProfiles.id))
@@ -246,7 +250,7 @@ async function listActiveOrAnyCampaignCards(): Promise<CampaignCard[]> {
     applicationDeadline: r.applicationDeadline,
     applicantCount: counts.get(r.id) ?? 0,
     mainPlatform: parseObject<CampaignRequirements>(r.requirements, {}).mainPlatform ?? null,
-    company: { name: r.companyName, slug: r.companySlug, logoUrl: r.companyLogoUrl, category: r.companyCategory }
+    company: { name: r.companyName, slug: r.companySlug, logoUrl: r.companyLogoUrl, category: r.companyCategory, verificationStatus: r.companyVerificationStatus }
   }));
 }
 
@@ -276,4 +280,60 @@ export async function isFavorite(userId: string, targetType: 'CREATOR' | 'CAMPAI
     where: and(eq(favorites.userId, userId), eq(favorites.targetType, targetType), eq(favorites.targetId, targetId))
   });
   return Boolean(row);
+}
+
+// --- Admin: verification queue --------------------------------------------
+
+export type CreatorVerificationRow = {
+  id: string;
+  displayName: string;
+  username: string;
+  email: string;
+  verificationNote: string | null;
+  updatedAt: string;
+};
+
+export type CompanyVerificationRow = {
+  id: string;
+  name: string;
+  slug: string;
+  email: string;
+  taxId: string | null;
+  verificationNote: string | null;
+  updatedAt: string;
+};
+
+/** Creator profiles with a pending verification request, newest first. */
+export async function listCreatorVerificationRequests(): Promise<CreatorVerificationRow[]> {
+  return db
+    .select({
+      id: creatorProfiles.id,
+      displayName: creatorProfiles.displayName,
+      username: creatorProfiles.username,
+      email: users.email,
+      verificationNote: creatorProfiles.verificationNote,
+      updatedAt: creatorProfiles.updatedAt
+    })
+    .from(creatorProfiles)
+    .innerJoin(users, eq(creatorProfiles.userId, users.id))
+    .where(eq(creatorProfiles.verificationStatus, 'PENDING'))
+    .orderBy(desc(creatorProfiles.updatedAt));
+}
+
+/** Company profiles with a pending verification request, newest first. */
+export async function listCompanyVerificationRequests(): Promise<CompanyVerificationRow[]> {
+  return db
+    .select({
+      id: companyProfiles.id,
+      name: companyProfiles.name,
+      slug: companyProfiles.slug,
+      email: users.email,
+      taxId: companyProfiles.taxId,
+      verificationNote: companyProfiles.verificationNote,
+      updatedAt: companyProfiles.updatedAt
+    })
+    .from(companyProfiles)
+    .innerJoin(users, eq(companyProfiles.userId, users.id))
+    .where(eq(companyProfiles.verificationStatus, 'PENDING'))
+    .orderBy(desc(companyProfiles.updatedAt));
 }
