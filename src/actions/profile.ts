@@ -127,6 +127,19 @@ export async function deletePortfolioItem(id: string) {
   revalidatePath(`/creators/${profile.username}`);
 }
 
+export async function submitCreatorVerification(formData: FormData) {
+  const { profile } = await requireCreatorProfile();
+  const verificationNote = str(formData, 'verificationNote');
+  if (!verificationNote) return;
+
+  await db
+    .update(creatorProfiles)
+    .set({ verificationStatus: 'PENDING', verificationNote, updatedAt: new Date().toISOString() })
+    .where(eq(creatorProfiles.id, profile.id));
+
+  revalidatePath('/creator/dashboard/profile');
+}
+
 // ---- Company ----
 
 export async function updateCompanyBasicInfo(_prev: ProfileFormState, formData: FormData): Promise<ProfileFormState> {
@@ -204,6 +217,25 @@ export async function removeCompanyVideo(url: string) {
   await db.update(companyProfiles).set({ videos: toJsonArray(videos) }).where(eq(companyProfiles.id, profile.id));
   revalidatePath('/company/dashboard/profile');
   revalidatePath(`/companies/${profile.slug}`);
+}
+
+export async function submitCompanyVerification(formData: FormData) {
+  const { profile } = await requireCompanyProfile();
+  const verificationNote = str(formData, 'verificationNote');
+  const taxId = str(formData, 'taxId');
+  if (!verificationNote) return;
+
+  await db
+    .update(companyProfiles)
+    .set({
+      verificationStatus: 'PENDING',
+      verificationNote,
+      taxId: taxId || profile.taxId,
+      updatedAt: new Date().toISOString()
+    })
+    .where(eq(companyProfiles.id, profile.id));
+
+  revalidatePath('/company/dashboard/profile');
 }
 
 // ---- Shared: change password ----
