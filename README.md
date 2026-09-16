@@ -16,9 +16,8 @@ principales completos:
 
 - **Next.js 14** (App Router) + **TypeScript**, con Server Actions para toda
   la lógica de escritura (registro, onboarding, campañas, candidaturas...).
-- **Drizzle ORM** sobre **SQLite** (`better-sqlite3`) en desarrollo — el
-  mismo esquema porta a Postgres en producción sin reescribir nada (ver
-  más abajo).
+- **Drizzle ORM** sobre **Postgres** (vía [Neon](https://neon.tech), driver
+  HTTP serverless) tanto en desarrollo como en producción.
 - **NextAuth (Credentials)** con sesiones JWT — sin proveedor externo, con
   recuperación de contraseña por email real (o consola en local).
 - **Tailwind CSS** para todo el sistema visual.
@@ -28,13 +27,17 @@ principales completos:
 
 ```bash
 npm install
-cp .env.example .env      # revisa los valores, funcionan tal cual en local
-npm run db:push           # crea/actualiza las tablas de SQLite (dev.db)
+cp .env.example .env      # rellena DATABASE_URL con tu connection string de Postgres
+npm run db:push           # crea/actualiza las tablas en Postgres
 npm run seed              # datos de demo: 5 empresas, 12 creadores, 10 campañas
 npm run dev                # http://localhost:3000
 ```
 
-No hace falta ninguna clave externa para probar la app en local: el envío
+Necesitas una base de datos Postgres incluso para desarrollo local — el
+plan gratuito de [Neon](https://neon.tech) o [Supabase](https://supabase.com)
+es suficiente. Crea la base de datos, copia su cadena de conexión en
+`DATABASE_URL` dentro de `.env` (no dejes el valor de ejemplo) y entonces
+sí, no hace falta ninguna otra clave externa para probar la app: el envío
 de emails de recuperación de contraseña cae automáticamente a "imprimir el
 enlace en la consola del servidor" si no configuras SMTP (ver más abajo).
 
@@ -96,27 +99,17 @@ La app está lista para desplegar, pero **tres piezas están en modo
 "desarrollo local" por diseño** y hay que configurarlas antes de un
 despliegue real:
 
-### 1. Base de datos: pasar de SQLite a Postgres
+### 1. Base de datos
 
-SQLite (con `better-sqlite3`) es perfecto para desarrollar y probar, pero
-la mayoría de plataformas serverless (Vercel incluida) no tienen un disco
-persistente para guardar el archivo `.db`. Antes de desplegar:
+La app ya usa Postgres (vía Neon) tanto en desarrollo como en producción,
+así que no hay que cambiar nada de código:
 
-1. Crea una base de datos Postgres (p.ej. [Neon](https://neon.tech) o
-   [Supabase](https://supabase.com) tienen plan gratuito).
-2. Cambia el dialecto de Drizzle:
-   - `drizzle.config.ts`: `dialect: 'postgresql'`.
-   - `src/db/index.ts`: sustituye `better-sqlite3` por
-     `drizzle-orm/node-postgres` (o `drizzle-orm/neon-serverless` si usas
-     Neon) — es un cambio de un puñado de líneas, el `schema.ts` **no
-     necesita tocarse**: los campos "lista" están guardados como texto
-     JSON precisamente para que el mismo esquema funcione en ambos
-     motores.
-   - `npm install pg` (o el driver del proveedor que elijas) y quita
-     `better-sqlite3` si ya no lo usas en ningún sitio.
-3. Pon la cadena de conexión en `DATABASE_URL` en las variables de entorno
+1. Crea una base de datos Postgres de producción (p.ej. [Neon](https://neon.tech)
+   o [Supabase](https://supabase.com) tienen plan gratuito) — usa una
+   distinta a la de desarrollo.
+2. Pon su cadena de conexión en `DATABASE_URL` en las variables de entorno
    de tu plataforma de despliegue.
-4. Ejecuta `npm run db:push` apuntando a la base de datos de producción
+3. Ejecuta `npm run db:push` apuntando a la base de datos de producción
    (o `npm run db:generate` + una migración si prefieres ese flujo).
 
 ### 2. Email real para recuperación de contraseña
@@ -195,9 +188,8 @@ disco persistente propio ni siquiera necesitas tocar el almacenamiento
 
 - Los campos "lista" del esquema (categorías, idiomas, tipos de
   compensación, contenido solicitado...) se guardan como texto JSON en
-  vez de arrays/enums nativos de la base de datos — es lo que permite que
-  el mismo `schema.ts` funcione sin cambios en SQLite (dev) y Postgres
-  (producción).
+  vez de arrays/enums nativos de la base de datos, para mantener el
+  acceso a ellos simple en toda la app (`src/lib/json.ts`).
 - Los asistentes de varios pasos (alta de perfil, creación de campaña)
   mantienen todos los pasos montados en el DOM (ocultos con CSS) dentro
   de un único `<form>`, para que un solo envío capture los campos de
