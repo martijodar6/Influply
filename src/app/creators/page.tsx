@@ -2,11 +2,26 @@ import { PublicNavbar } from '@/components/public-navbar';
 import { CreatorCard } from '@/components/creator-card';
 import { CreatorFilters } from '@/components/creator-filters';
 import { EmptyState } from '@/components/ui/primitives';
+import { SectionAuthGate } from '@/components/section-auth-gate';
 import { listCreatorCards, isFavorite } from '@/lib/queries';
 import { getCurrentUser } from '@/lib/session';
 
 export default async function CreatorsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
-  const [creators, user] = await Promise.all([listCreatorCards().catch(() => []), getCurrentUser()]);
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#faf9ff]">
+        <PublicNavbar />
+        <SectionAuthGate
+          title="Inicia sesión para explorar creadores"
+          description="Regístrate o inicia sesión como empresa o como creador para ver el listado completo."
+        />
+      </div>
+    );
+  }
+
+  const creators = await listCreatorCards().catch(() => []);
   const q = typeof searchParams.q === 'string' ? searchParams.q.toLowerCase() : '';
   const location = typeof searchParams.location === 'string' ? searchParams.location : '';
   const categories = ([] as string[]).concat((searchParams.category as string[] | string | undefined) ?? []);
@@ -59,3 +74,4 @@ export default async function CreatorsPage({ searchParams }: { searchParams: { [
     </div>
   );
 }
+
