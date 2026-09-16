@@ -78,6 +78,13 @@ export const creatorProfiles = pgTable(
     dateOfBirth: text('date_of_birth'),
     gender: text('gender'),
     onboardingDone: boolean('onboarding_done').notNull().default(false),
+    // Verification workflow: UNVERIFIED | PENDING | VERIFIED | REJECTED
+    // (src/lib/constants.ts). verificationNote holds whatever proof the
+    // creator submitted (a profile link, usually); verifiedAt is set when
+    // an admin approves the request.
+    verificationStatus: text('verification_status').notNull().default('UNVERIFIED'),
+    verificationNote: text('verification_note'),
+    verifiedAt: timestamp('verified_at', { mode: 'string' }),
     ...timestamps,
     updatedAt: timestamp('updated_at', { mode: 'string' }).notNull().defaultNow(),
   },
@@ -146,6 +153,13 @@ export const companyProfiles = pgTable(
     photos: text('photos').notNull().default('[]'),
     videos: text('videos').notNull().default('[]'),
     onboardingDone: boolean('onboarding_done').notNull().default(false),
+    // Tax/business ID (CIF/NIF in Spain), used only as part of verification.
+    taxId: text('tax_id'),
+    // Verification workflow: UNVERIFIED | PENDING | VERIFIED | REJECTED
+    // (src/lib/constants.ts). Mirrors creatorProfiles above.
+    verificationStatus: text('verification_status').notNull().default('UNVERIFIED'),
+    verificationNote: text('verification_note'),
+    verifiedAt: timestamp('verified_at', { mode: 'string' }),
     ...timestamps,
     updatedAt: timestamp('updated_at', { mode: 'string' }).notNull().defaultNow(),
   },
