@@ -57,4 +57,3 @@ export function SocialPlatformIcon({ platform, size = 16 }: { platform: SocialPl
       return <GenericLinkIcon size={size} />;
   }
 }
-</svg>
