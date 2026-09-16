@@ -37,4 +37,3 @@ export function SectionAuthGate({ title, description }: { title: string; descrip
     </div>
   );
 }
-ello <div>world</div> test
