@@ -1,9 +1,10 @@
 import Image from 'next/image';
 import { DashboardShell, companyNavItems } from '@/components/dashboard-shell';
-import { Card, Field, Input, Button, LinkButton } from '@/components/ui/primitives';
+import { Card, Field, Input, Textarea, Button, LinkButton, Badge } from '@/components/ui/primitives';
 import { requireCompanyProfile } from '@/lib/guards';
 import { parseArray } from '@/lib/json';
-import { addCompanyPhoto, removeCompanyPhoto, addCompanyVideo, removeCompanyVideo } from '@/actions/profile';
+import { VERIFICATION_STATUS_LABEL, type VerificationStatus } from '@/lib/constants';
+import { addCompanyPhoto, removeCompanyPhoto, addCompanyVideo, removeCompanyVideo, submitCompanyVerification } from '@/actions/profile';
 import { CompanyBasicInfoForm } from './basic-info-form';
 
 export default async function CompanyProfilePage() {
@@ -22,6 +23,45 @@ export default async function CompanyProfilePage() {
           Ver perfil público →
         </LinkButton>
       </div>
+
+      <Card className="mb-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-semibold text-ink-900">Verificación</h2>
+          <Badge
+            tone={
+              profile.verificationStatus === 'VERIFIED'
+                ? 'success'
+                : profile.verificationStatus === 'PENDING'
+                ? 'warning'
+                : profile.verificationStatus === 'REJECTED'
+                ? 'danger'
+                : 'neutral'
+            }
+          >
+            {VERIFICATION_STATUS_LABEL[profile.verificationStatus as VerificationStatus] ?? 'Sin verificar'}
+          </Badge>
+        </div>
+        {profile.verificationStatus === 'VERIFIED' && (
+          <p className="text-sm text-ink-500">Tu empresa está verificada y muestra la insignia junto al nombre.</p>
+        )}
+        {profile.verificationStatus === 'PENDING' && (
+          <p className="text-sm text-ink-500">Tu solicitud está en revisión. Te avisaremos en cuanto la resolvamos.</p>
+        )}
+        {(profile.verificationStatus === 'UNVERIFIED' || profile.verificationStatus === 'REJECTED') && (
+          <form action={submitCompanyVerification} className="flex flex-col gap-3">
+            <p className="text-sm text-ink-500">
+              {profile.verificationStatus === 'REJECTED'
+                ? 'Tu solicitud anterior fue rechazada. Puedes volver a enviarla.'
+                : 'Indícanos tu CIF/NIF y comparte tu web, redes sociales u otra prueba de que el negocio es real, y lo revisaremos.'}
+            </p>
+            <Input name="taxId" defaultValue={profile.taxId ?? ''} placeholder="CIF / NIF" />
+            <Textarea name="verificationNote" placeholder="Web, redes sociales u otra información que ayude a verificar el negocio" required />
+            <Button type="submit" variant="secondary" className="self-start">
+              Solicitar verificación
+            </Button>
+          </form>
+        )}
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
