@@ -16,7 +16,7 @@ export function UserMenu({ name, role }: { name: string; role: string }) {
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
-  const dashboardHref = role === 'COMPANY' ? '/company/dashboard' : '/creator/dashboard';
+  const dashboardHref = role === 'ADMIN' ? '/admin/verifications' : role === 'COMPANY' ? '/company/dashboard' : '/creator/dashboard';
   const initials = name
     .split(' ')
     .map((w) => w[0])
@@ -38,12 +38,14 @@ export function UserMenu({ name, role }: { name: string; role: string }) {
           <Link href={dashboardHref} className="block px-4 py-2 text-sm text-ink-700 hover:bg-ink-100/60">
             Mi dashboard
           </Link>
-          <Link
-            href={role === 'COMPANY' ? '/company/dashboard/profile' : '/creator/dashboard/profile'}
-            className="block px-4 py-2 text-sm text-ink-700 hover:bg-ink-100/60"
-          >
-            Mi perfil
-          </Link>
+          {role !== 'ADMIN' && (
+            <Link
+              href={role === 'COMPANY' ? '/company/dashboard/profile' : '/creator/dashboard/profile'}
+              className="block px-4 py-2 text-sm text-ink-700 hover:bg-ink-100/60"
+            >
+              Mi perfil
+            </Link>
+          )}
           <button
             onClick={() => signOut({ callbackUrl: '/' })}
             className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
