@@ -14,11 +14,14 @@ export default async function PostLoginPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
 
-if (user.role === 'CREATOR') {
-  redirect(user.onboardingDone ? '/creator/dashboard' : '/onboarding/creator');
-}
+  if (user.role === 'CREATOR') {
+    redirect(user.onboardingDone ? '/creator/dashboard' : '/onboarding/creator');
+  }
   if (user.role === 'COMPANY') {
     redirect(user.onboardingDone ? '/company/dashboard' : '/onboarding/company');
+  }
+  if (user.role === 'ADMIN') {
+    redirect('/admin/verifications');
   }
   redirect('/');
 }
