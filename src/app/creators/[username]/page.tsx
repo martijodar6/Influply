@@ -3,9 +3,11 @@ import { notFound } from 'next/navigation';
 import { PublicNavbar } from '@/components/public-navbar';
 import { Badge, Card } from '@/components/ui/primitives';
 import { FavoriteButton } from '@/components/favorite-button';
+import { SocialPlatformIcon } from '@/components/social-icons';
 import { getCreatorDetailByUsername, isFavorite } from '@/lib/queries';
 import { getCurrentUser } from '@/lib/session';
-import { SOCIAL_PLATFORM_LABEL } from '@/lib/constants';
+import { getSocialProfileUrl } from '@/lib/social';
+import { SOCIAL_PLATFORM_LABEL, type SocialPlatform } from '@/lib/constants';
 
 export default async function CreatorProfilePage({ params }: { params: { username: string } }) {
   const [creator, user] = await Promise.all([getCreatorDetailByUsername(params.username), getCurrentUser()]);
