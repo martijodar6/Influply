@@ -5,8 +5,10 @@ import { Badge, Card } from '@/components/ui/primitives';
 import { FavoriteButton } from '@/components/favorite-button';
 import { SocialPlatformIcon } from '@/components/social-icons';
 import { VerifiedBadge } from '@/components/verified-badge';
+import { Button } from '@/components/ui/primitives';
 import { getCreatorDetailByUsername, isFavorite } from '@/lib/queries';
 import { getCurrentUser } from '@/lib/session';
+import { startConversationWithCreator } from '@/actions/messages';
 import { getSocialProfileUrl } from '@/lib/social';
 import { SOCIAL_PLATFORM_LABEL, type SocialPlatform } from '@/lib/constants';
 
@@ -45,7 +47,16 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
               </div>
             </div>
           </div>
-          {user?.role === 'COMPANY' && <FavoriteButton targetType="CREATOR" targetId={creator.id} initial={favorite} />}
+          {user?.role === 'COMPANY' && (
+            <div className="flex items-center gap-2">
+              <form action={startConversationWithCreator.bind(null, creator.id)}>
+                <Button type="submit" variant="secondary">
+                  Enviar mensaje
+                </Button>
+              </form>
+              <FavoriteButton targetType="CREATOR" targetId={creator.id} initial={favorite} />
+            </div>
+          )}
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
