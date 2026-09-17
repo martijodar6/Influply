@@ -68,6 +68,9 @@ function CampaignRow({ campaign }: { campaign: { id: string; title: string; cate
         <Link href={`/company/dashboard/campaigns/${campaign.id}/applicants`} className="text-sm font-medium text-brand-600 hover:text-brand-700">
           {campaign.applicantCount} candidatos
         </Link>
+        <Link href={`/company/dashboard/campaigns/${campaign.id}/invite`} className="text-sm font-medium text-brand-600 hover:text-brand-700">
+          Invitar creadores
+        </Link>
         <CampaignStatusToggle campaignId={campaign.id} status={campaign.status} />
       </div>
     </Card>
