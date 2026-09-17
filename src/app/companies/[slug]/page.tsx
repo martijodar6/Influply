@@ -2,12 +2,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PublicNavbar } from '@/components/public-navbar';
-import { Badge, Card } from '@/components/ui/primitives';
+import { Badge, Button, Card } from '@/components/ui/primitives';
 import { VerifiedBadge } from '@/components/verified-badge';
 import { getCompanyDetailBySlug } from '@/lib/queries';
+import { getCurrentUser } from '@/lib/session';
+import { startConversationWithCompany } from '@/actions/messages';
 
 export default async function CompanyProfilePage({ params }: { params: { slug: string } }) {
-  const company = await getCompanyDetailBySlug(params.slug);
+  const [company, user] = await Promise.all([getCompanyDetailBySlug(params.slug), getCurrentUser()]);
   if (!company) notFound();
 
   return (
@@ -36,6 +38,13 @@ export default async function CompanyProfilePage({ params }: { params: { slug: s
               {company.tiktok && <span>{company.tiktok}</span>}
             </div>
           </div>
+          {user?.role === 'CREATOR' && (
+            <form action={startConversationWithCompany.bind(null, company.id)} className="ml-auto">
+              <Button type="submit" variant="secondary">
+                Enviar mensaje
+              </Button>
+            </form>
+          )}
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
