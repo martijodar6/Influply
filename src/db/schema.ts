@@ -258,3 +258,72 @@ export const notifications = pgTable(
     userReadIdx: index('notification_user_read_idx').on(t.userId, t.read),
   })
   );
+
+// --- Campaign invitations (company invites a specific creator) -----------
+
+export const campaignInvitations = pgTable(
+  'campaign_invitations',
+  {
+    id: id(),
+    campaignId: text('campaign_id')
+    .notNull()
+    .references(() => campaigns.id, { onDelete: 'cascade' }),
+    creatorId: text('creator_id')
+    .notNull()
+    .references(() => creatorProfiles.id, { onDelete: 'cascade' }),
+    companyId: text('company_id')
+    .notNull()
+    .references(() => companyProfiles.id, { onDelete: 'cascade' }),
+    message: text('message'),
+    status: text('status').notNull().default('PENDING'), // PENDING | ACCEPTED | REJECTED
+    ...timestamps,
+    updatedAt: timestamp('updated_at', { mode: 'string' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uniqueInvitation: uniqueIndex('invitation_campaign_creator_idx').on(t.campaignId, t.creatorId),
+    creatorIdx: index('invitation_creator_idx').on(t.creatorId),
+  })
+  );
+
+// --- In-app messaging -----------------------------------------------------
+//
+// One conversation per (creator, company) pair — open to everyone, no prior
+// application or invitation required. A simple inbox: pages read messages on
+// load/reload, no polling.
+
+export const conversations = pgTable(
+  'conversations',
+  {
+    id: id(),
+    creatorId: text('creator_id')
+    .notNull()
+    .references(() => creatorProfiles.id, { onDelete: 'cascade' }),
+    companyId: text('company_id')
+    .notNull()
+    .references(() => companyProfiles.id, { onDelete: 'cascade' }),
+    ...timestamps,
+    updatedAt: timestamp('updated_at', { mode: 'string' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uniqueConversation: uniqueIndex('conversation_creator_company_idx').on(t.creatorId, t.companyId),
+  })
+  );
+
+export const messages = pgTable(
+  'messages',
+  {
+    id: id(),
+    conversationId: text('conversation_id')
+    .notNull()
+    .references(() => conversations.id, { onDelete: 'cascade' }),
+    senderUserId: text('sender_user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    read: boolean('read').notNull().default(false),
+    ...timestamps,
+  },
+  (t) => ({
+    conversationIdx: index('message_conversation_idx').on(t.conversationId),
+  })
+  );
