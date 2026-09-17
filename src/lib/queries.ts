@@ -1,5 +1,17 @@
 import { db } from '@/db';
-import { campaigns, companyProfiles, applications, creatorProfiles, favorites, socialNetworks, portfolioItems, users } from '@/db/schema';
+import {
+  campaigns,
+  companyProfiles,
+  applications,
+  creatorProfiles,
+  favorites,
+  socialNetworks,
+  portfolioItems,
+  users,
+  campaignInvitations,
+  conversations,
+  messages
+} from '@/db/schema';
 import { and, desc, eq, sql, inArray } from 'drizzle-orm';
 import { parseArray, parseObject, CampaignRequirements, ContentRequestedItem } from './json';
 
@@ -336,4 +348,144 @@ export async function listCompanyVerificationRequests(): Promise<CompanyVerifica
     .innerJoin(users, eq(companyProfiles.userId, users.id))
     .where(eq(companyProfiles.verificationStatus, 'PENDING'))
     .orderBy(desc(companyProfiles.updatedAt));
+}
+
+// --- Campaign invitations (company invites a creator directly) -----------
+
+/** Invitations sent to a creator, newest first, with the campaign + company they're for. */
+export async function listInvitationsForCreator(creatorId: string) {
+  const rows = await db
+    .select({
+      id: campaignInvitations.id,
+      status: campaignInvitations.status,
+      message: campaignInvitations.message,
+      createdAt: campaignInvitations.createdAt,
+      campaignId: campaigns.id,
+      title: campaigns.title,
+      category: campaigns.category,
+      location: campaigns.location,
+      companyName: companyProfiles.name,
+      companySlug: companyProfiles.slug,
+      companyLogoUrl: companyProfiles.logoUrl
+    })
+    .from(campaignInvitations)
+    .innerJoin(campaigns, eq(campaignInvitations.campaignId, campaigns.id))
+    .innerJoin(companyProfiles, eq(campaignInvitations.companyId, companyProfiles.id))
+    .where(eq(campaignInvitations.creatorId, creatorId))
+    .orderBy(desc(campaignInvitations.createdAt));
+  return rows;
+}
+
+/** Ids of creators already invited to a campaign, so the invite UI can skip them. */
+export async function getInvitedCreatorIdsForCampaign(campaignId: string): Promise<Set<string>> {
+  const rows = await db
+    .select({ creatorId: campaignInvitations.creatorId })
+    .from(campaignInvitations)
+    .where(eq(campaignInvitations.campaignId, campaignId));
+  return new Set(rows.map((r) => r.creatorId));
+}
+
+// --- In-app messaging ------------------------------------------------------
+
+export type ConversationRow = {
+  id: string;
+  updatedAt: string;
+  otherName: string;
+  otherAvatarUrl: string | null;
+  otherHref: string;
+  lastMessage: string | null;
+  unreadCount: number;
+};
+
+/** Conversations for a creator's inbox, most recently active first. */
+export async function listConversationsForCreator(creatorId: string): Promise<ConversationRow[]> { const rows = await db
+    .select({
+      id: conversations.id,
+      updatedAt: conversations.updatedAt,
+      companyId: companyProfiles.id,
+      companyName: companyProfiles.name,
+      companySlug: companyProfiles.slug,
+      companyLogoUrl: companyProfiles.logoUrl
+    })
+    .from(conversations)
+    .innerJoin(companyProfiles, eq(conversations.companyId, companyProfiles.id))
+    .where(eq(conversations.creatorId, creatorId))
+    .orderBy(desc(conversations.updatedAt));
+  return attachMessagePreview(
+    rows.map((r) => ({ id: r.id, updatedAt: r.updatedAt, otherName: r.companyName, otherAvatarUrl: r.companyLogoUrl, otherHref: `/companies/${r.companySlug}` })),
+    creatorId,
+    'creator'
+  );
+}
+
+/** Conversations for a company's inbox, most recently active first. */
+export async function listConversationsForCompany(companyId: string): Promise<ConversationRow[]> {
+  const rows = await db
+    .select({
+      id: conversations.id,
+      updatedAt: conversations.updatedAt,
+      creatorId: creatorProfiles.id,
+      creatorName: creatorProfiles.displayName,
+      creatorUsername: creatorProfiles.username,
+      creatorAvatarUrl: creatorProfiles.avatarUrl
+    })
+    .from(conversations)
+    .innerJoin(creatorProfiles, eq(conversations.creatorId, creatorProfiles.id))
+    .where(eq(conversations.companyId, companyId))
+    .orderBy(desc(conversations.updatedAt));
+  return attachMessagePreview(
+    rows.map((r) => ({ id: r.id, updatedAt: r.updatedAt, otherName: r.creatorName, otherAvatarUrl: r.creatorAvatarUrl, otherHref: `/creators/${r.creatorUsername}` })),
+    companyId,
+    'company'
+  );
+}
+
+async function attachMessagePreview(
+  rows: { id: string; updatedAt: string; otherName: string; otherAvatarUrl: string | null; otherHref: string }[],
+  _ownerId: string,
+  _side: 'creator' | 'company'
+): Promise<ConversationRow[]> {
+  const ids = rows.map((r) => r.id);
+  if (ids.length === 0) return [];
+  const msgs = await db
+    .select({ conversationId: messages.conversationId, body: messages.body, senderUserId: messages.senderUserId, read: messages.read, createdAt: messages.createdAt })
+    .from(messages)
+    .where(inArray(messages.conversationId, ids))
+    .orderBy(desc(messages.createdAt));
+
+  return rows.map((r) => {
+    const forThis = msgs.filter((m) => m.conversationId === r.id);
+    return {
+      ...r,
+      lastMessage: forThis[0]?.body ?? null,
+      unreadCount: forThis.filter((m) => !m.read).length
+    };
+  });
+}
+
+/** Finds an existing conversation between a creator and a company, if any. */
+export async function findConversation(creatorId: string, companyId: string) {
+  return db.query.conversations.findFirst({ where: and(eq(conversations.creatorId, creatorId), eq(conversations.companyId, companyId)) });
+}
+
+export async function getConversationById(id: string) {
+  const convo = await db.query.conversations.findFirst({ where: eq(conversations.id, id) });
+  if (!convo) return null;
+  const [creator, company] = await Promise.all([
+    db.query.creatorProfiles.findFirst({ where: eq(creatorProfiles.id, convo.creatorId) }),
+    db.query.companyProfiles.findFirst({ where: eq(companyProfiles.id, convo.companyId) })
+  ]);
+  if (!creator || !company) return null;
+  return { ...convo, creator, company };
+}
+
+/** Messages in a conversation, oldest first, with the sender's role for styling. */
+export async function listMessages(conversationId: string) {
+  const rows = await db
+    .select({ id: messages.id, body: messages.body, createdAt: messages.createdAt, read: messages.read, senderUserId: messages.senderUserId, senderRole: users.role })
+    .from(messages)
+    .innerJoin(users, eq(messages.senderUserId, users.id))
+    .where(eq(messages.conversationId, conversationId))
+    .orderBy(messages.createdAt);
+  return rows;
 }
