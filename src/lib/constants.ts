@@ -131,6 +131,15 @@ export const VERIFICATION_STATUS_LABEL: Record<VerificationStatus, string> = {
   REJECTED: 'Rechazado'
 };
 
+export const INVITATION_STATUS = ['PENDING', 'ACCEPTED', 'REJECTED'] as const;
+export type InvitationStatus = (typeof INVITATION_STATUS)[number];
+
+export const INVITATION_STATUS_LABEL: Record<InvitationStatus, string> = {
+  PENDING: 'Pendiente',
+  ACCEPTED: 'Aceptada',
+  REJECTED: 'Rechazada'
+};
+
 export const FAVORITE_TARGET_TYPES = ['CREATOR', 'CAMPAIGN'] as const;
 
 export const AUDIENCE_TYPES = ['General', 'Familias', 'Jóvenes 18-25', 'Profesionales', 'Deportistas', 'Foodies'] as const;
