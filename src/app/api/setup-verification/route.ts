@@ -34,6 +34,49 @@ export async function GET(req: NextRequest) {
   await db.execute(sql`ALTER TABLE company_profiles ADD COLUMN IF NOT EXISTS tax_id text`);
   log.push('company_profiles: columnas de verificación listas');
 
+  // Campaign invitations + in-app messaging (companies inviting creators
+  // directly, and a free-for-everyone chat between creators and companies).
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS campaign_invitations (
+      id text PRIMARY KEY,
+      campaign_id text NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+      creator_id text NOT NULL REFERENCES creator_profiles(id) ON DELETE CASCADE,
+      company_id text NOT NULL REFERENCES company_profiles(id) ON DELETE CASCADE,
+      message text,
+      status text NOT NULL DEFAULT 'PENDING',
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    )
+  `);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS invitation_campaign_creator_idx ON campaign_invitations (campaign_id, creator_id)`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS invitation_creator_idx ON campaign_invitations (creator_id)`);
+  log.push('campaign_invitations: tabla lista');
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS conversations (
+      id text PRIMARY KEY,
+      creator_id text NOT NULL REFERENCES creator_profiles(id) ON DELETE CASCADE,
+      company_id text NOT NULL REFERENCES company_profiles(id) ON DELETE CASCADE,
+      created_at timestamp NOT NULL DEFAULT now(),
+      updated_at timestamp NOT NULL DEFAULT now()
+    )
+  `);
+  await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS conversation_creator_company_idx ON conversations (creator_id, company_id)`);
+  log.push('conversations: tabla lista');
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS messages (
+      id text PRIMARY KEY,
+      conversation_id text NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+      sender_user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      body text NOT NULL,
+      read boolean NOT NULL DEFAULT false,
+      created_at timestamp NOT NULL DEFAULT now()
+    )
+  `);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS message_conversation_idx ON messages (conversation_id)`);
+  log.push('messages: tabla lista');
+
   const makeAdmin = searchParams.get('makeAdmin');
   if (makeAdmin) {
     await db.update(users).set({ role: 'ADMIN' }).where(eq(users.email, makeAdmin));
