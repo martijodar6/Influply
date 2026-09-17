@@ -1,13 +1,16 @@
 import { DashboardShell, companyNavItems } from '@/components/dashboard-shell';
 import { CreatorCard } from '@/components/creator-card';
 import { CreatorFilters } from '@/components/creator-filters';
+import { InviteToCampaignForm } from '@/components/invite-to-campaign-form';
 import { EmptyState } from '@/components/ui/primitives';
 import { requireCompanyProfile } from '@/lib/guards';
-import { listCreatorCards, isFavorite } from '@/lib/queries';
+import { listCreatorCards, isFavorite, listCampaignsForCompany } from '@/lib/queries';
 
 export default async function CompanyExploreCreatorsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
-  const { user } = await requireCompanyProfile();
+  const { user, profile } = await requireCompanyProfile();
   const creators = await listCreatorCards();
+  const myCampaigns = await listCampaignsForCompany(profile.id);
+  const activeCampaigns = myCampaigns.filter((c) => c.status === 'ACTIVE').map((c) => ({ id: c.id, title: c.title }));
 
   const q = typeof searchParams.q === 'string' ? searchParams.q.toLowerCase() : '';
   const location = typeof searchParams.location === 'string' ? searchParams.location : '';
@@ -44,7 +47,10 @@ export default async function CompanyExploreCreatorsPage({ searchParams }: { sea
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {filtered.map((c) => (
-                <CreatorCard key={c.id} creator={c} isFavorite={favoriteIds.has(c.id)} canFavorite />
+                <div key={c.id} className="flex flex-col gap-2">
+                  <CreatorCard creator={c} isFavorite={favoriteIds.has(c.id)} canFavorite />
+                  <InviteToCampaignForm creatorId={c.id} campaigns={activeCampaigns} />
+                </div>
               ))}
             </div>
           )}
