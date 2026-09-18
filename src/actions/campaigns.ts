@@ -75,7 +75,8 @@ export async function createCampaign(_prev: FormState, formData: FormData): Prom
     budgetApprox,
     contentRequested: toJsonArray(contentRequested),
     coverImageUrl,
-    status: 'ACTIVE'
+    status: 'ACTIVE',
+    reviewStatus: 'PENDING'
   });
 
   revalidatePath('/campaigns');
@@ -109,7 +110,9 @@ export async function applyToCampaign(_prev: ApplyState, formData: FormData): Pr
   if (!creator) redirect('/onboarding/creator');
 
   const campaign = await db.query.campaigns.findFirst({ where: eq(campaigns.id, campaignId) });
-  if (!campaign || campaign.status !== 'ACTIVE') return { error: 'Esta campaña ya no admite candidaturas.' };
+  if (!campaign || campaign.status !== 'ACTIVE' || campaign.reviewStatus !== 'APPROVED') {
+    return { error: 'Esta campaña ya no admite candidaturas.' };
+  }
 
   const existing = await db.query.applications.findFirst({
     where: and(eq(applications.campaignId, campaignId), eq(applications.creatorId, creator.id))
