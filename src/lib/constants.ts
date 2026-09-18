@@ -140,6 +140,15 @@ export const INVITATION_STATUS_LABEL: Record<InvitationStatus, string> = {
   REJECTED: 'Rechazada'
 };
 
+export const CAMPAIGN_REVIEW_STATUS = ['PENDING', 'APPROVED', 'REJECTED'] as const;
+export type CampaignReviewStatus = (typeof CAMPAIGN_REVIEW_STATUS)[number];
+
+export const CAMPAIGN_REVIEW_STATUS_LABEL: Record<CampaignReviewStatus, string> = {
+  PENDING: 'En revisión',
+  APPROVED: 'Aprobada',
+  REJECTED: 'Rechazada'
+};
+
 export const FAVORITE_TARGET_TYPES = ['CREATOR', 'CAMPAIGN'] as const;
 
 export const AUDIENCE_TYPES = ['General', 'Familias', 'Jóvenes 18-25', 'Profesionales', 'Deportistas', 'Foodies'] as const;

@@ -54,7 +54,7 @@ export async function listActiveCampaignCards(): Promise<CampaignCard[]> {
     })
     .from(campaigns)
     .innerJoin(companyProfiles, eq(campaigns.companyId, companyProfiles.id))
-    .where(eq(campaigns.status, 'ACTIVE'))
+    .where(and(eq(campaigns.status, 'ACTIVE'), eq(campaigns.reviewStatus, 'APPROVED')))
     .orderBy(desc(campaigns.createdAt));
 
   const counts = await applicantCountsByCampaign(rows.map((r) => r.id));
@@ -282,8 +282,8 @@ export async function getCompanyDetailBySlug(slug: string) {
     ...company,
     photos: parseArray<string>(company.photos),
     videos: parseArray<string>(company.videos),
-    activeCampaigns: rows.filter((r) => r.status === 'ACTIVE'),
-    pastCampaigns: rows.filter((r) => r.status !== 'ACTIVE')
+    activeCampaigns: rows.filter((r) => r.status === 'ACTIVE' && r.reviewStatus === 'APPROVED'),
+    pastCampaigns: rows.filter((r) => r.status !== 'ACTIVE' && r.reviewStatus === 'APPROVED')
   };
 }
 
@@ -350,6 +350,40 @@ export async function listCompanyVerificationRequests(): Promise<CompanyVerifica
     .orderBy(desc(companyProfiles.updatedAt));
 }
 
+export type CampaignReviewRow = {
+  id: string;
+  title: string;
+  category: string;
+  location: string;
+  budgetApprox: string | null;
+  coverImageUrl: string | null;
+  createdAt: string;
+  companyName: string;
+  companySlug: string;
+  companyVerificationStatus: string;
+};
+
+/** Campaigns awaiting admin approval before they can appear publicly, newest first. */
+export async function listPendingCampaignReviews(): Promise<CampaignReviewRow[]> {
+  return db
+    .select({
+      id: campaigns.id,
+      title: campaigns.title,
+      category: campaigns.category,
+      location: campaigns.location,
+      budgetApprox: campaigns.budgetApprox,
+      coverImageUrl: campaigns.coverImageUrl,
+      createdAt: campaigns.createdAt,
+      companyName: companyProfiles.name,
+      companySlug: companyProfiles.slug,
+      companyVerificationStatus: companyProfiles.verificationStatus
+    })
+    .from(campaigns)
+    .innerJoin(companyProfiles, eq(campaigns.companyId, companyProfiles.id))
+    .where(eq(campaigns.reviewStatus, 'PENDING'))
+    .orderBy(desc(campaigns.createdAt));
+}
+
 // --- Campaign invitations (company invites a creator directly) -----------
 
 /** Invitations sent to a creator, newest first, with the campaign + company they're for. */
@@ -398,7 +432,8 @@ export type ConversationRow = {
 };
 
 /** Conversations for a creator's inbox, most recently active first. */
-export async function listConversationsForCreator(creatorId: string): Promise<ConversationRow[]> { const rows = await db
+export async function listConversationsForCreator(creatorId: string): Promise<ConversationRow[]> {
+  const rows = await db
     .select({
       id: conversations.id,
       updatedAt: conversations.updatedAt,
