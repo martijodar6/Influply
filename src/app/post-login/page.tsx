@@ -14,6 +14,8 @@ export default async function PostLoginPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
 
+  if (!user.emailVerified) redirect('/verify-email');
+
   if (user.role === 'CREATOR') {
     redirect(user.onboardingDone ? '/creator/dashboard' : '/onboarding/creator');
   }
