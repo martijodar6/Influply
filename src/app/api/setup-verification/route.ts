@@ -77,6 +77,11 @@ export async function GET(req: NextRequest) {
   await db.execute(sql`CREATE INDEX IF NOT EXISTS message_conversation_idx ON messages (conversation_id)`);
   log.push('messages: tabla lista');
 
+  // Ad-review workflow: a campaign only shows up in the public marketplace
+  // once an admin approves it from /admin/campaigns.
+  await db.execute(sql`ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS review_status text NOT NULL DEFAULT 'PENDING'`);
+  log.push('campaigns: columna de revisión lista');
+
   const makeAdmin = searchParams.get('makeAdmin');
   if (makeAdmin) {
     await db.update(users).set({ role: 'ADMIN' }).where(eq(users.email, makeAdmin));
