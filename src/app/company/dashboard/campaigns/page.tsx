@@ -4,6 +4,11 @@ import { Badge, Card, EmptyState, LinkButton } from '@/components/ui/primitives'
 import { requireCompanyProfile } from '@/lib/guards';
 import { listCampaignsForCompany } from '@/lib/queries';
 import { CampaignStatusToggle } from '@/components/campaign-status-toggle';
+import { CAMPAIGN_REVIEW_STATUS_LABEL, type CampaignReviewStatus } from '@/lib/constants';
+
+function reviewStatusLabel(status: string) {
+  return CAMPAIGN_REVIEW_STATUS_LABEL[status as CampaignReviewStatus] ?? 'En revisión';
+}
 
 export default async function CompanyCampaignsPage() {
   const { user, profile } = await requireCompanyProfile();
@@ -52,7 +57,12 @@ export default async function CompanyCampaignsPage() {
   );
 }
 
-function CampaignRow({ campaign }: { campaign: { id: string; title: string; category: string; location: string; status: string; applicantCount: number } }) {
+function CampaignRow({
+  campaign
+}: {
+  campaign: { id: string; title: string; category: string; location: string; status: string; reviewStatus: string; applicantCount: number };
+}) {
+  const reviewTone = campaign.reviewStatus === 'APPROVED' ? 'success' : campaign.reviewStatus === 'REJECTED' ? 'danger' : 'warning';
   return (
     <Card className="flex items-center justify-between gap-4 p-4">
       <div>
@@ -64,6 +74,7 @@ function CampaignRow({ campaign }: { campaign: { id: string; title: string; cate
         </div>
       </div>
       <div className="flex items-center gap-3">
+        <Badge tone={reviewTone}>{reviewStatusLabel(campaign.reviewStatus)}</Badge>
         <Badge tone={campaign.status === 'ACTIVE' ? 'success' : 'neutral'}>{campaign.status === 'ACTIVE' ? 'Abierta' : 'Cerrada'}</Badge>
         <Link href={`/company/dashboard/campaigns/${campaign.id}/applicants`} className="text-sm font-medium text-brand-600 hover:text-brand-700">
           {campaign.applicantCount} candidatos
