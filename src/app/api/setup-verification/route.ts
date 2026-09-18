@@ -82,6 +82,25 @@ export async function GET(req: NextRequest) {
   await db.execute(sql`ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS review_status text NOT NULL DEFAULT 'PENDING'`);
   log.push('campaigns: columna de revisión lista');
 
+  // Signup email verification: a 6-digit code, checked in /verify-email
+  // before onboarding is reachable (src/lib/session.ts). Existing accounts
+  // are grandfathered in as verified — the code flow only applies to
+  // accounts created from here on.
+  await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at timestamp`);
+  await db.execute(sql`UPDATE users SET email_verified_at = created_at WHERE email_verified_at IS NULL`);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS email_verification_codes (
+      id text PRIMARY KEY,
+      user_id text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      code text NOT NULL,
+      expires_at timestamp NOT NULL,
+      used_at timestamp,
+      created_at timestamp NOT NULL DEFAULT now()
+    )
+  `);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS email_verification_user_idx ON email_verification_codes (user_id)`);
+  log.push('users/email_verification_codes: verificación de email lista (cuentas existentes marcadas como verificadas)');
+
   const makeAdmin = searchParams.get('makeAdmin');
   if (makeAdmin) {
     await db.update(users).set({ role: 'ADMIN' }).where(eq(users.email, makeAdmin));
