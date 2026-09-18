@@ -8,7 +8,7 @@ import { getCampaignDetail } from '@/lib/queries';
 import { getCurrentUser } from '@/lib/session';
 import { db } from '@/db';
 import { applications, creatorProfiles } from '@/db/schema';
-import { CREATOR_TYPE_LABEL, COMPENSATION_TYPE_LABEL, CONTENT_TYPE_LABEL, APPLICATION_STATUS_LABEL } from '@/lib/constants';
+import { CREATOR_TYPE_LABEL, COMPENSATION_TYPE_LABEL, CONTENT_TYPE_LABEL, APPLICATION_STATUS_LABEL, CAMPAIGN_REVIEW_STATUS_LABEL, type CampaignReviewStatus } from '@/lib/constants';
 import { ApplyForm } from './apply-form';
 
 export default async function CampaignDetailPage({ params }: { params: { id: string } }) {
@@ -29,11 +29,27 @@ export default async function CampaignDetailPage({ params }: { params: { id: str
   if (user?.role === 'COMPANY') {
     isOwner = campaign.company.userId === user.id;
   }
+  // A campaign pending/rejected review isn't public yet — only its owner and
+  // admins (reviewing it from /admin/campaigns) can open it by direct link.
+  if (campaign.reviewStatus !== 'APPROVED' && !isOwner && user?.role !== 'ADMIN') notFound();
 
   return (
     <div className="min-h-screen bg-[#faf9ff]">
       <PublicNavbar />
       <div className="mx-auto max-w-5xl px-5 py-10 sm:px-8">
+        {isOwner && campaign.reviewStatus !== 'APPROVED' && (
+          <div
+            className={`mb-6 rounded-xl2 border p-4 text-sm ${
+              campaign.reviewStatus === 'REJECTED' ? 'border-red-200 bg-red-50 text-red-700' : 'border-amber-200 bg-amber-50 text-amber-700'
+            }`}
+          >
+            {campaign.reviewStatus === 'REJECTED'
+              ? 'Esta campaña no ha sido aprobada por el equipo de Influply, así que no es visible en el marketplace público.'
+              : 'Esta campaña está en revisión por el equipo de Influply y aún no es visible en el marketplace público. Te avisaremos en cuanto se apruebe.'}
+            {' Estado: '}
+            <b>{CAMPAIGN_REVIEW_STATUS_LABEL[campaign.reviewStatus as CampaignReviewStatus] ?? 'En revisión'}</b>
+          </div>
+        )}
         <div className="relative mb-8 h-56 w-full overflow-hidden rounded-xl2 bg-gradient-to-br from-brand-100 to-accent-400/40 sm:h-72">
           {campaign.coverImageUrl && <Image src={campaign.coverImageUrl} alt={campaign.title} fill className="object-cover" unoptimized />}
         </div>
