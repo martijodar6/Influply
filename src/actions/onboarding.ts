@@ -49,6 +49,7 @@ async function uniqueSlug(base: string): Promise<string> {
 export async function completeCreatorOnboarding(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await getCurrentUser();
   if (!user || user.role !== 'CREATOR') redirect('/login');
+  if (!user.emailVerified) redirect('/verify-email');
 
   const existing = await db.query.creatorProfiles.findFirst({ where: eq(creatorProfiles.userId, user.id) });
   if (existing) redirect('/creator/dashboard');
@@ -135,6 +136,7 @@ export async function completeCreatorOnboarding(_prev: FormState, formData: Form
 export async function completeCompanyOnboarding(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await getCurrentUser();
   if (!user || user.role !== 'COMPANY') redirect('/login');
+  if (!user.emailVerified) redirect('/verify-email');
 
   const existing = await db.query.companyProfiles.findFirst({ where: eq(companyProfiles.userId, user.id) });
   if (existing) redirect('/company/dashboard');

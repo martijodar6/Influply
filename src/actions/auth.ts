@@ -3,10 +3,31 @@
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { db } from '@/db';
-import { users, passwordResetTokens } from '@/db/schema';
+import { users, passwordResetTokens, emailVerificationCodes } from '@/db/schema';
 import { eq, and, gt, isNull } from 'drizzle-orm';
 import { hashPassword } from '@/lib/password';
-import { sendPasswordResetEmail } from '@/lib/mailer';
+import { sendPasswordResetEmail, sendVerificationCodeEmail } from '@/lib/mailer';
+import { getCurrentUser } from '@/lib/session';
+
+const VERIFICATION_CODE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+function generateSixDigitCode(): string {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+async function issueVerificationCode(userId: string, email: string) {
+  // Superseding any still-valid code keeps exactly one live code per user,
+  // so an older resend can't be used once a newer one has been sent.
+  await db
+    .update(emailVerificationCodes)
+    .set({ usedAt: new Date().toISOString() })
+    .where(and(eq(emailVerificationCodes.userId, userId), isNull(emailVerificationCodes.usedAt)));
+
+  const code = generateSixDigitCode();
+  const expiresAt = new Date(Date.now() + VERIFICATION_CODE_TTL_MS).toISOString();
+  await db.insert(emailVerificationCodes).values({ id: randomUUID(), userId, code, expiresAt });
+  await sendVerificationCodeEmail(email, code);
+}
 
 const signUpSchema = z.object({
   name: z.string().min(2, 'Escribe tu nombre'),
@@ -40,7 +61,46 @@ export async function registerUser(input: unknown): Promise<ActionResult<{ userI
     name
   });
 
+  await issueVerificationCode(id, normalizedEmail);
+
   return { ok: true, data: { userId: id } };
+}
+
+const verifyEmailSchema = z.object({ code: z.string().trim().regex(/^\d{6}$/, 'Introduce el código de 6 dígitos.') });
+
+export async function verifyEmailCode(input: unknown): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: 'Debes iniciar sesión.' };
+
+  const parsed = verifyEmailSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? 'Código no válido.' };
+
+  const row = await db.query.emailVerificationCodes.findFirst({
+    where: and(
+      eq(emailVerificationCodes.userId, user.id),
+      eq(emailVerificationCodes.code, parsed.data.code),
+      isNull(emailVerificationCodes.usedAt),
+      gt(emailVerificationCodes.expiresAt, new Date().toISOString())
+    )
+  });
+  if (!row) return { ok: false, error: 'Código incorrecto o caducado.' };
+
+  await db.update(emailVerificationCodes).set({ usedAt: new Date().toISOString() }).where(eq(emailVerificationCodes.id, row.id));
+  await db.update(users).set({ emailVerifiedAt: new Date().toISOString() }).where(eq(users.id, user.id));
+
+  return { ok: true };
+}
+
+export async function resendVerificationCode(): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: 'Debes iniciar sesión.' };
+
+  const row = await db.query.users.findFirst({ where: eq(users.id, user.id) });
+  if (!row) return { ok: false, error: 'Debes iniciar sesión.' };
+  if (row.emailVerifiedAt) return { ok: true };
+
+  await issueVerificationCode(user.id, row.email);
+  return { ok: true };
 }
 
 const forgotSchema = z.object({ email: z.string().email() });
