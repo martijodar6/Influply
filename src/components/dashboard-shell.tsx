@@ -92,7 +92,8 @@ export const creatorNavItems: NavItem[] = [
 ];
 
 export const adminNavItems: NavItem[] = [
-  { href: '/admin/verifications', label: 'Verificaciones', icon: <IconInbox /> }
+  { href: '/admin/verifications', label: 'Verificaciones', icon: <IconInbox /> },
+  { href: '/admin/campaigns', label: 'Campañas', icon: <IconCampaign /> }
 ];
 
 export const companyNavItems: NavItem[] = [
