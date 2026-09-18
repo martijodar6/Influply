@@ -191,6 +191,10 @@ export const campaigns = pgTable(
     contentRequested: text('content_requested').notNull().default('[]'),
     coverImageUrl: text('cover_image_url'),
     status: text('status').notNull().default('ACTIVE'), // DRAFT | ACTIVE | CLOSED
+    // Ad-review workflow: PENDING | APPROVED | REJECTED (src/lib/constants.ts).
+    // Independent of `status` above (which the company controls) — a campaign
+    // only shows up in the public marketplace once an admin approves it here.
+    reviewStatus: text('review_status').notNull().default('PENDING'),
     ...timestamps,
     updatedAt: timestamp('updated_at', { mode: 'string' }).notNull().defaultNow(),
   },
