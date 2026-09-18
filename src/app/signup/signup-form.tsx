@@ -43,7 +43,10 @@ export function SignUpForm() {
       return;
     }
 
-    router.push(role === 'CREATOR' ? '/onboarding/creator' : '/onboarding/company');
+    // /post-login reads the fresh session and sends the user wherever they
+    // belong next — /verify-email first (a brand-new account always starts
+    // unverified), then onboarding.
+    router.push('/post-login');
     router.refresh();
   }
 
