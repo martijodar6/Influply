@@ -18,5 +18,9 @@ export async function requireUser() {
 export async function requireRole(role: 'CREATOR' | 'COMPANY' | 'ADMIN') {
   const user = await requireUser();
   if (user.role !== role) redirect('/');
+  // Signup sends a 6-digit code to the email on file; nothing role-gated
+  // (onboarding, dashboards, campaign actions...) is reachable until it's
+  // confirmed. ADMIN is never gated — those accounts aren't self-signed-up.
+  if (!user.emailVerified) redirect('/verify-email');
   return user;
 }
