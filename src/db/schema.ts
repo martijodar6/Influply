@@ -27,6 +27,13 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash').notNull(),
   role: text('role').notNull(), // "CREATOR" | "COMPANY" | "ADMIN"
   name: text('name'),
+  // Email-verification workflow: set once the signup 6-digit code (see
+  // emailVerificationCodes below) is confirmed. Null means unverified — an
+  // unverified CREATOR/COMPANY is redirected to /verify-email before they
+  // can reach onboarding or any dashboard (src/lib/session.ts). ADMIN
+  // accounts are provisioned directly, not through signup, so this never
+  // gates them.
+  emailVerifiedAt: timestamp('email_verified_at', { mode: 'string' }),
   ...timestamps,
   updatedAt: timestamp('updated_at', { mode: 'string' }).notNull().defaultNow(),
 });
@@ -45,6 +52,23 @@ export const passwordResetTokens = pgTable(
   },
   (t) => ({
     userIdx: index('reset_user_idx').on(t.userId),
+  })
+  );
+
+export const emailVerificationCodes = pgTable(
+  'email_verification_codes',
+  {
+    id: id(),
+    userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+    code: text('code').notNull(),
+    expiresAt: timestamp('expires_at', { mode: 'string' }).notNull(),
+    usedAt: timestamp('used_at', { mode: 'string' }),
+    ...timestamps,
+  },
+  (t) => ({
+    userIdx: index('email_verification_user_idx').on(t.userId),
   })
   );
 
