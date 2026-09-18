@@ -26,7 +26,17 @@ async function issueVerificationCode(userId: string, email: string) {
   const code = generateSixDigitCode();
   const expiresAt = new Date(Date.now() + VERIFICATION_CODE_TTL_MS).toISOString();
   await db.insert(emailVerificationCodes).values({ id: randomUUID(), userId, code, expiresAt });
-  await sendVerificationCodeEmail(email, code);
+
+  // A transient email-delivery failure (provider rate limit, sandbox
+  // restrictions, a momentary outage...) must not take down signup or
+  // resend — the code is already stored, and "Reenviar código" on
+  // /verify-email lets the user try again. Log it so it's visible in
+  // server logs without crashing the caller.
+  try {
+    await sendVerificationCodeEmail(email, code);
+  } catch (err) {
+    console.error('[Influply] No se pudo enviar el código de verificación:', err);
+  }
 }
 
 const signUpSchema = z.object({
