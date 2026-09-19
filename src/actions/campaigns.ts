@@ -36,6 +36,22 @@ export async function createCampaign(_prev: FormState, formData: FormData): Prom
   const creatorTypes = formData.getAll('creatorTypes').map(String);
   const compensationTypes = formData.getAll('compensationTypes').map(String);
 
+  // A campaign has to say what it offers before it can go live — otherwise a
+  // creator can't tell what they'd be applying for.
+  if (compensationTypes.length === 0) {
+    return { error: 'Selecciona al menos un tipo de compensación (qué ofrece tu empresa).' };
+  }
+  if (compensationTypes.includes('PAID') && !budgetApprox) {
+    return { error: 'Indica el presupuesto aproximado: has marcado "Colaboración pagada".' };
+  }
+
+  const contentRequested = [0, 1, 2, 3, 4]
+    .map((i) => ({ type: str(formData, `content_type_${i}`), qty: Number(str(formData, `content_qty_${i}`)) || 0 }))
+    .filter((c) => c.type && c.qty > 0);
+  if (contentRequested.length === 0) {
+    return { error: 'Indica al menos un tipo de contenido esperado y su cantidad.' };
+  }
+
   const requirements = {
     minFollowers: str(formData, 'minFollowers') ? Number(str(formData, 'minFollowers')) : undefined,
     ageRange: str(formData, 'ageRange') || undefined,
@@ -43,10 +59,6 @@ export async function createCampaign(_prev: FormState, formData: FormData): Prom
     mainPlatform: str(formData, 'mainPlatform') || undefined,
     audienceType: str(formData, 'audienceType') || undefined
   };
-
-  const contentRequested = [0, 1, 2, 3, 4]
-    .map((i) => ({ type: str(formData, `content_type_${i}`), qty: Number(str(formData, `content_qty_${i}`)) || 0 }))
-    .filter((c) => c.type && c.qty > 0);
 
   let coverImageUrl: string | null = null;
   const cover = formData.get('coverImage');

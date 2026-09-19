@@ -56,9 +56,28 @@ export async function completeCreatorOnboarding(_prev: FormState, formData: Form
 
   const displayName = str(formData, 'displayName');
   if (!displayName) return { error: 'Escribe tu nombre.' };
-  const city = str(formData, 'city') || null;
-  const bio = str(formData, 'bio') || null;
+
+  const bio = str(formData, 'bio');
+  if (!bio) return { error: 'Cuéntanos algo sobre ti en la bio.' };
+
   const categories = formData.getAll('categories').map(String);
+  if (categories.length === 0) return { error: 'Elige al menos una categoría de contenido.' };
+
+  // At least one fully-filled social network row (platform + handle) is
+  // required — a creator profile with no social presence listed is not
+  // useful to a company deciding who to contact.
+  const socialRows = [0, 1, 2, 3].map((i) => ({
+    platform: str(formData, `social_platform_${i}`),
+    handle: str(formData, `social_handle_${i}`)
+  }));
+  if (!socialRows.some((r) => r.platform && r.handle)) {
+    return { error: 'Añade al menos una red social con tu usuario.' };
+  }
+
+  const avatarFile = fileOrNull(formData, 'avatar');
+  if (!avatarFile) return { error: 'Sube una foto de perfil.' };
+
+  const city = str(formData, 'city') || null;
   const languages = formData.getAll('languages').map(String);
   const priceApprox = str(formData, 'priceApprox') || null;
   const availability = str(formData, 'availability') || null;
@@ -68,9 +87,8 @@ export async function completeCreatorOnboarding(_prev: FormState, formData: Form
     .filter(Boolean);
 
   let avatarUrl: string | null = null;
-  const avatarFile = fileOrNull(formData, 'avatar');
   try {
-    if (avatarFile) avatarUrl = await saveUpload(avatarFile, 'avatar');
+    avatarUrl = await saveUpload(avatarFile, 'avatar');
   } catch (e) {
     return { error: e instanceof UploadError ? e.message : 'No se pudo subir la foto de perfil.' };
   }
