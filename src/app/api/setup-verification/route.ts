@@ -34,6 +34,15 @@ export async function GET(req: NextRequest) {
   await db.execute(sql`ALTER TABLE company_profiles ADD COLUMN IF NOT EXISTS tax_id text`);
   log.push('company_profiles: columnas de verificación listas');
 
+  // Identity-verification upgrade: "proof of control" instead of ID
+  // documents (see src/db/schema.ts). Creators get a one-time code to send
+  // from their social account + a selfie holding it; companies add a
+  // public-proof link (Maps listing, official site) alongside their CIF/NIF.
+  await db.execute(sql`ALTER TABLE creator_profiles ADD COLUMN IF NOT EXISTS verification_code text`);
+  await db.execute(sql`ALTER TABLE creator_profiles ADD COLUMN IF NOT EXISTS verification_selfie_url text`);
+  await db.execute(sql`ALTER TABLE company_profiles ADD COLUMN IF NOT EXISTS verification_proof_url text`);
+  log.push('verificación reforzada: columnas de código/selfie/prueba listas');
+
   // Campaign invitations + in-app messaging (companies inviting creators
   // directly, and a free-for-everyone chat between creators and companies).
   await db.execute(sql`
