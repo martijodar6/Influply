@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { DashboardShell, creatorNavItems } from '@/components/dashboard-shell';
-import { Card, Field, Input, Select, Textarea, Button, LinkButton, Badge } from '@/components/ui/primitives';
+import { Card, Field, Input, Select, Button, LinkButton, Badge } from '@/components/ui/primitives';
 import { SocialPlatformIcon } from '@/components/social-icons';
 import { requireCreatorProfile } from '@/lib/guards';
 import { parseArray } from '@/lib/json';
@@ -10,14 +10,17 @@ import { SOCIAL_PLATFORMS, SOCIAL_PLATFORM_LABEL, VERIFICATION_STATUS_LABEL, typ
 import { db } from '@/db';
 import { socialNetworks, portfolioItems } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { addSocialNetwork, deleteSocialNetwork, addPortfolioPhoto, addPortfolioVideo, deletePortfolioItem, submitCreatorVerification } from '@/actions/profile';
+import { addSocialNetwork, deleteSocialNetwork, addPortfolioPhoto, addPortfolioVideo, deletePortfolioItem, ensureCreatorVerificationCode } from '@/actions/profile';
 import { CreatorBasicInfoForm } from './basic-info-form';
+import { CreatorVerificationForm } from './verification-form';
 
 export default async function CreatorProfilePage() {
   const { user, profile } = await requireCreatorProfile();
-  const [socials, portfolio] = await Promise.all([
+  const needsVerification = profile.verificationStatus === 'UNVERIFIED' || profile.verificationStatus === 'REJECTED';
+  const [socials, portfolio, verificationCode] = await Promise.all([
     db.select().from(socialNetworks).where(eq(socialNetworks.creatorId, profile.id)),
-    db.select().from(portfolioItems).where(eq(portfolioItems.creatorId, profile.id)).orderBy(portfolioItems.order)
+    db.select().from(portfolioItems).where(eq(portfolioItems.creatorId, profile.id)).orderBy(portfolioItems.order),
+    needsVerification ? ensureCreatorVerificationCode() : Promise.resolve(null)
   ]);
 
   const enriched = {
@@ -62,18 +65,8 @@ export default async function CreatorProfilePage() {
         {profile.verificationStatus === 'PENDING' && (
           <p className="text-sm text-ink-500">Tu solicitud está en revisión. Te avisaremos en cuanto la resolvamos.</p>
         )}
-        {(profile.verificationStatus === 'UNVERIFIED' || profile.verificationStatus === 'REJECTED') && (
-          <form action={submitCreatorVerification} className="flex flex-col gap-3">
-            <p className="text-sm text-ink-500">
-              {profile.verificationStatus === 'REJECTED'
-                ? 'Tu solicitud anterior fue rechazada. Puedes volver a enviarla.'
-                : 'Comparte el enlace a tu perfil de Instagram, TikTok o YouTube (o cualquier prueba de que eres quien dices ser) y lo revisaremos.'}
-            </p>
-            <Textarea name="verificationNote" placeholder="Enlace a tu perfil u otra información que nos ayude a verificarte" required />
-            <Button type="submit" variant="secondary" className="self-start">
-              Solicitar verificación
-            </Button>
-          </form>
+        {needsVerification && verificationCode && (
+          <CreatorVerificationForm code={verificationCode} rejected={profile.verificationStatus === 'REJECTED'} />
         )}
       </Card>
 
