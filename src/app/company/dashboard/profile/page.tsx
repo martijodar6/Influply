@@ -1,11 +1,12 @@
 import Image from 'next/image';
 import { DashboardShell, companyNavItems } from '@/components/dashboard-shell';
-import { Card, Field, Input, Textarea, Button, LinkButton, Badge } from '@/components/ui/primitives';
+import { Card, Field, Input, Button, LinkButton, Badge } from '@/components/ui/primitives';
 import { requireCompanyProfile } from '@/lib/guards';
 import { parseArray } from '@/lib/json';
 import { VERIFICATION_STATUS_LABEL, type VerificationStatus } from '@/lib/constants';
-import { addCompanyPhoto, removeCompanyPhoto, addCompanyVideo, removeCompanyVideo, submitCompanyVerification } from '@/actions/profile';
+import { addCompanyPhoto, removeCompanyPhoto, addCompanyVideo, removeCompanyVideo } from '@/actions/profile';
 import { CompanyBasicInfoForm } from './basic-info-form';
+import { CompanyVerificationForm } from './verification-form';
 
 export default async function CompanyProfilePage() {
   const { user, profile } = await requireCompanyProfile();
@@ -48,18 +49,7 @@ export default async function CompanyProfilePage() {
           <p className="text-sm text-ink-500">Tu solicitud está en revisión. Te avisaremos en cuanto la resolvamos.</p>
         )}
         {(profile.verificationStatus === 'UNVERIFIED' || profile.verificationStatus === 'REJECTED') && (
-          <form action={submitCompanyVerification} className="flex flex-col gap-3">
-            <p className="text-sm text-ink-500">
-              {profile.verificationStatus === 'REJECTED'
-                ? 'Tu solicitud anterior fue rechazada. Puedes volver a enviarla.'
-                : 'Indícanos tu CIF/NIF y comparte tu web, redes sociales u otra prueba de que el negocio es real, y lo revisaremos.'}
-            </p>
-            <Input name="taxId" defaultValue={profile.taxId ?? ''} placeholder="CIF / NIF" />
-            <Textarea name="verificationNote" placeholder="Web, redes sociales u otra información que ayude a verificar el negocio" required />
-            <Button type="submit" variant="secondary" className="self-start">
-              Solicitar verificación
-            </Button>
-          </form>
+          <CompanyVerificationForm taxId={profile.taxId} rejected={profile.verificationStatus === 'REJECTED'} />
         )}
       </Card>
 
