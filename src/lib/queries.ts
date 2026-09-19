@@ -301,6 +301,8 @@ export type CreatorVerificationRow = {
   displayName: string;
   username: string;
   email: string;
+  verificationCode: string | null;
+  verificationSelfieUrl: string | null;
   verificationNote: string | null;
   updatedAt: string;
 };
@@ -311,6 +313,7 @@ export type CompanyVerificationRow = {
   slug: string;
   email: string;
   taxId: string | null;
+  verificationProofUrl: string | null;
   verificationNote: string | null;
   updatedAt: string;
 };
@@ -323,6 +326,8 @@ export async function listCreatorVerificationRequests(): Promise<CreatorVerifica
       displayName: creatorProfiles.displayName,
       username: creatorProfiles.username,
       email: users.email,
+      verificationCode: creatorProfiles.verificationCode,
+      verificationSelfieUrl: creatorProfiles.verificationSelfieUrl,
       verificationNote: creatorProfiles.verificationNote,
       updatedAt: creatorProfiles.updatedAt
     })
@@ -341,6 +346,7 @@ export async function listCompanyVerificationRequests(): Promise<CompanyVerifica
       slug: companyProfiles.slug,
       email: users.email,
       taxId: companyProfiles.taxId,
+      verificationProofUrl: companyProfiles.verificationProofUrl,
       verificationNote: companyProfiles.verificationNote,
       updatedAt: companyProfiles.updatedAt
     })

@@ -13,9 +13,9 @@ import path from 'path';
 import sharp from 'sharp';
 import { put } from '@vercel/blob';
 
-export type UploadKind = 'avatar' | 'logo' | 'portfolio-photo' | 'campaign-cover' | 'business-photo' | 'cover-photo';
+export type UploadKind = 'avatar' | 'logo' | 'portfolio-photo' | 'campaign-cover' | 'business-photo' | 'cover-photo' | 'verification-selfie';
 
-const IMAGE_KINDS: UploadKind[] = ['avatar', 'logo', 'portfolio-photo', 'campaign-cover', 'business-photo', 'cover-photo'];
+const IMAGE_KINDS: UploadKind[] = ['avatar', 'logo', 'portfolio-photo', 'campaign-cover', 'business-photo', 'cover-photo', 'verification-selfie'];
 
 const MAX_BYTES = 15 * 1024 * 1024; // 15MB
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
