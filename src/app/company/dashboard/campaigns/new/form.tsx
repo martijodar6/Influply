@@ -115,20 +115,22 @@ export function NewCampaignForm() {
         </Step>
 
         <Step index={2}>
-          <Field label="Qué ofrece la empresa">
+          <Field label="Qué ofrece la empresa" required hint="Elige al menos una.">
             <div className="flex flex-wrap gap-2">
               {COMPENSATION_TYPES.map((c) => (
                 <ChipCheckbox key={c} name="compensationTypes" value={c} label={COMPENSATION_TYPE_LABEL[c]} />
               ))}
             </div>
           </Field>
-          <Field label="Presupuesto aproximado (si hay pago)">
+          <Field label="Presupuesto aproximado" required hint="Obligatorio si ofreces una colaboración pagada.">
             <Input name="budgetApprox" placeholder="p.ej. 150-250€" />
           </Field>
         </Step>
 
         <Step index={3}>
-          <p className="text-sm text-ink-500">Indica el contenido que esperas recibir (deja en blanco lo que no aplique).</p>
+          <p className="text-sm text-ink-500">
+            Indica al menos un tipo de contenido que esperas recibir, con cantidad (deja en blanco lo que no aplique).
+          </p>
           {[0, 1, 2, 3, 4].map((i) => (
             <div key={i} className="grid grid-cols-[1fr_100px] gap-3">
               <Select name={`content_type_${i}`} defaultValue="">
