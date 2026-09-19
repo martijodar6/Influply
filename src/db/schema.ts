@@ -103,10 +103,17 @@ export const creatorProfiles = pgTable(
     gender: text('gender'),
     onboardingDone: boolean('onboarding_done').notNull().default(false),
     // Verification workflow: UNVERIFIED | PENDING | VERIFIED | REJECTED
-    // (src/lib/constants.ts). verificationNote holds whatever proof the
-    // creator submitted (a profile link, usually); verifiedAt is set when
-    // an admin approves the request.
+    // (src/lib/constants.ts). We deliberately don't collect ID documents —
+    // instead the creator proves they control the social handle(s) already
+    // on their profile: verificationCode is a one-time code they're asked
+    // to send from that account (DM or comment) to Influply's own social
+    // account, and verificationSelfieUrl is a selfie holding that code, so
+    // an admin can eyeball that a real, matching person is behind it.
+    // verificationNote holds any extra context the creator adds.
+    // verifiedAt is set when an admin approves the request.
     verificationStatus: text('verification_status').notNull().default('UNVERIFIED'),
+    verificationCode: text('verification_code'),
+    verificationSelfieUrl: text('verification_selfie_url'),
     verificationNote: text('verification_note'),
     verifiedAt: timestamp('verified_at', { mode: 'string' }),
     ...timestamps,
@@ -180,8 +187,12 @@ export const companyProfiles = pgTable(
     // Tax/business ID (CIF/NIF in Spain), used only as part of verification.
     taxId: text('tax_id'),
     // Verification workflow: UNVERIFIED | PENDING | VERIFIED | REJECTED
-    // (src/lib/constants.ts). Mirrors creatorProfiles above.
+    // (src/lib/constants.ts). Mirrors creatorProfiles above — no ID
+    // documents, just a cross-checkable public proof (Google Maps listing,
+    // official website) that an admin matches against the CIF/NIF and the
+    // profile's own name/address.
     verificationStatus: text('verification_status').notNull().default('UNVERIFIED'),
+    verificationProofUrl: text('verification_proof_url'),
     verificationNote: text('verification_note'),
     verifiedAt: timestamp('verified_at', { mode: 'string' }),
     ...timestamps,
