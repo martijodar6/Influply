@@ -10,6 +10,7 @@ import { getCurrentUser } from '@/lib/session';
 import { saveUpload, UploadError } from '@/lib/storage';
 import { toJsonArray, parseArray } from '@/lib/json';
 import { verifyPassword, hashPassword } from '@/lib/password';
+import { generateVerificationCode } from '@/lib/verification';
 export type ProfileFormState = { error?: string; success?: boolean } | null;
 
 function str(fd: FormData, key: string) {
@@ -127,17 +128,41 @@ export async function deletePortfolioItem(id: string) {
   revalidatePath(`/creators/${profile.username}`);
 }
 
-export async function submitCreatorVerification(formData: FormData) {
+// The verification code has to exist and be visible *before* the creator
+// submits (they need to send it via DM/comment first), so it's generated
+// lazily the first time the profile page renders the "unverified" card —
+// not inside submitCreatorVerification, which only records the attempt.
+export async function ensureCreatorVerificationCode(): Promise<string> {
   const { profile } = await requireCreatorProfile();
-  const verificationNote = str(formData, 'verificationNote');
-  if (!verificationNote) return;
+  if (profile.verificationCode) return profile.verificationCode;
+
+  const code = generateVerificationCode();
+  await db.update(creatorProfiles).set({ verificationCode: code }).where(eq(creatorProfiles.id, profile.id));
+  return code;
+}
+
+export async function submitCreatorVerification(_prev: ProfileFormState, formData: FormData): Promise<ProfileFormState> {
+  const { profile } = await requireCreatorProfile();
+  const verificationNote = str(formData, 'verificationNote') || null;
+
+  let verificationSelfieUrl = profile.verificationSelfieUrl;
+  const selfie = formData.get('verificationSelfie');
+  if (selfie instanceof File && selfie.size > 0) {
+    try {
+      verificationSelfieUrl = await saveUpload(selfie, 'verification-selfie');
+    } catch (e) {
+      return { error: e instanceof UploadError ? e.message : 'No se pudo subir la selfie.' };
+    }
+  }
+  if (!verificationSelfieUrl) return { error: 'Sube una selfie sujetando tu código de verificación.' };
 
   await db
     .update(creatorProfiles)
-    .set({ verificationStatus: 'PENDING', verificationNote, updatedAt: new Date().toISOString() })
+    .set({ verificationStatus: 'PENDING', verificationNote, verificationSelfieUrl, updatedAt: new Date().toISOString() })
     .where(eq(creatorProfiles.id, profile.id));
 
   revalidatePath('/creator/dashboard/profile');
+  return { success: true };
 }
 
 // ---- Company ----
@@ -219,23 +244,29 @@ export async function removeCompanyVideo(url: string) {
   revalidatePath(`/companies/${profile.slug}`);
 }
 
-export async function submitCompanyVerification(formData: FormData) {
+export async function submitCompanyVerification(_prev: ProfileFormState, formData: FormData): Promise<ProfileFormState> {
   const { profile } = await requireCompanyProfile();
-  const verificationNote = str(formData, 'verificationNote');
   const taxId = str(formData, 'taxId');
-  if (!verificationNote) return;
+  if (!taxId) return { error: 'Indica el CIF/NIF del negocio.' };
+
+  const verificationProofUrl = str(formData, 'verificationProofUrl');
+  if (!verificationProofUrl) return { error: 'Comparte un enlace a tu ficha de Google Maps o a tu web oficial.' };
+
+  const verificationNote = str(formData, 'verificationNote') || null;
 
   await db
     .update(companyProfiles)
     .set({
       verificationStatus: 'PENDING',
       verificationNote,
-      taxId: taxId || profile.taxId,
+      verificationProofUrl,
+      taxId,
       updatedAt: new Date().toISOString()
     })
     .where(eq(companyProfiles.id, profile.id));
 
   revalidatePath('/company/dashboard/profile');
+  return { success: true };
 }
 
 // ---- Shared: change password ----
