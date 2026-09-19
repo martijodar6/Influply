@@ -15,8 +15,8 @@ export function CreatorOnboardingForm() {
     <form action={formAction}>
       <Stepper labels={['Datos básicos', 'Sobre ti', 'Redes sociales', 'Portfolio']} submitLabel="Terminar y ver mi dashboard">
         <Step index={0}>
-          <ImageFileInput name="avatar" label="Foto de perfil" round />
-          <Field label="Nombre completo">
+          <ImageFileInput name="avatar" label="Foto de perfil *" round />
+          <Field label="Nombre completo" required>
             <Input name="displayName" required placeholder="Ana Pérez" />
           </Field>
           <Field label="Ciudad">
@@ -25,10 +25,10 @@ export function CreatorOnboardingForm() {
         </Step>
 
         <Step index={1}>
-          <Field label="Bio" hint="Cuenta quién eres y qué tipo de contenido creas.">
-            <Textarea name="bio" placeholder="Creadora de contenido de viajes y lifestyle en Barcelona…" />
+          <Field label="Bio" required hint="Cuenta quién eres y qué tipo de contenido creas.">
+            <Textarea name="bio" required placeholder="Creadora de contenido de viajes y lifestyle en Barcelona…" />
           </Field>
-          <Field label="Categorías de contenido">
+          <Field label="Categorías de contenido" required hint="Elige al menos una.">
             <div className="flex flex-wrap gap-2">
               {CREATOR_CATEGORIES.map((c) => (
                 <ChipCheckbox key={c} name="categories" value={c} />
@@ -45,7 +45,7 @@ export function CreatorOnboardingForm() {
         </Step>
 
         <Step index={2}>
-          <p className="text-sm text-ink-500">Añade tus redes principales (puedes dejar filas vacías si no aplican).</p>
+          <p className="text-sm text-ink-500">Añade al menos una red social con tu usuario (las demás filas puedes dejarlas vacías).</p>
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="grid grid-cols-3 gap-3 rounded-xl2 border border-ink-100 p-3">
               <Select name={`social_platform_${i}`} defaultValue="">
