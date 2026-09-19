@@ -1,6 +1,8 @@
+import Image from 'next/image';
 import { DashboardShell, adminNavItems } from '@/components/dashboard-shell';
 import { Card, Badge, Button } from '@/components/ui/primitives';
 import { requireRole } from '@/lib/session';
+import { VERIFICATION_CONTACT_HANDLE } from '@/lib/verification';
 import { listCreatorVerificationRequests, listCompanyVerificationRequests } from '@/lib/queries';
 import { approveCreatorVerification, rejectCreatorVerification, approveCompanyVerification, rejectCompanyVerification } from '@/actions/admin';
 
@@ -21,6 +23,10 @@ export default async function AdminVerificationsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <h2 className="mb-4 font-semibold text-ink-900">Creadores · {creatorRequests.length} pendiente{creatorRequests.length === 1 ? '' : 's'}</h2>
+          <p className="mb-4 text-xs text-ink-400">
+            Comprueba en la bandeja de {VERIFICATION_CONTACT_HANDLE} que el código llegó desde la cuenta indicada en el perfil, y que la
+            selfie muestra a una persona real sujetando ese mismo código.
+          </p>
           {creatorRequests.length === 0 ? (
             <p className="text-sm text-ink-400">No hay solicitudes pendientes.</p>
           ) : (
@@ -35,6 +41,18 @@ export default async function AdminVerificationsPage() {
                       </div>
                     </div>
                     <Badge tone="warning">Pendiente</Badge>
+                  </div>
+                  <div className="mt-2 flex items-center gap-3">
+                    {c.verificationCode && (
+                      <span className="rounded bg-brand-50 px-2 py-0.5 font-mono text-xs font-bold tracking-wider text-brand-700">
+                        Código: {c.verificationCode}
+                      </span>
+                    )}
+                    {c.verificationSelfieUrl && (
+                      <a href={c.verificationSelfieUrl} target="_blank" rel="noreferrer" className="relative h-14 w-14 flex-none overflow-hidden rounded-xl2 bg-ink-100">
+                        <Image src={c.verificationSelfieUrl} alt="Selfie de verificación" fill className="object-cover" unoptimized />
+                      </a>
+                    )}
                   </div>
                   {c.verificationNote && <p className="mt-2 whitespace-pre-line text-sm text-ink-700">{c.verificationNote}</p>}
                   <div className="mt-3 flex gap-2">
@@ -73,6 +91,11 @@ export default async function AdminVerificationsPage() {
                     </div>
                     <Badge tone="warning">Pendiente</Badge>
                   </div>
+                  {c.verificationProofUrl && (
+                    <a href={c.verificationProofUrl} target="_blank" rel="noreferrer" className="mt-2 block truncate text-sm text-brand-700 hover:underline">
+                      {c.verificationProofUrl}
+                    </a>
+                  )}
                   {c.verificationNote && <p className="mt-2 whitespace-pre-line text-sm text-ink-700">{c.verificationNote}</p>}
                   <div className="mt-3 flex gap-2">
                     <form action={approveCompanyVerification.bind(null, c.id)}>
