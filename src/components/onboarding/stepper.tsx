@@ -67,7 +67,23 @@ export function Stepper({
           // "button" to "submit" *during* that very click's dispatch — which
           // makes the browser submit the form right then. Distinct keys
           // force React to mount a fresh node for the submit button instead.
-          <Button key="continue" type="button" onClick={() => setStep((s) => Math.min(labels.length - 1, s + 1))}>
+          <Button
+            key="continue"
+            type="button"
+            onClick={(e) => {
+              // Every <Step> other than the current one is hidden (via the
+              // `hidden` attribute + `display:none`), which the browser's
+              // constraint-validation API already treats as "not
+              // rendered" and excludes from validation — so calling
+              // reportValidity() on the owning form here only checks the
+              // *currently visible* step's required fields. If one is
+              // empty, the browser focuses it and shows its native
+              // validation message instead of letting the user move on.
+              const form = e.currentTarget.form;
+              if (form && !form.reportValidity()) return;
+              setStep((s) => Math.min(labels.length - 1, s + 1));
+            }}
+          >
             Continuar
           </Button>
         ) : (
