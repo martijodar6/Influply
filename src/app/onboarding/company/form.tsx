@@ -15,10 +15,10 @@ export function CompanyOnboardingForm() {
       <Stepper labels={['Datos básicos', 'Sobre el negocio', 'Fotos y vídeos']} submitLabel="Terminar y ver mi dashboard">
         <Step index={0}>
           <ImageFileInput name="logo" label="Logo" round />
-          <Field label="Nombre de la empresa">
+          <Field label="Nombre de la empresa" required>
             <Input name="name" required placeholder="Bar El Rincón" />
           </Field>
-          <Field label="Categoría">
+          <Field label="Categoría" required>
             <Select name="category" required defaultValue="">
               <option value="" disabled>
                 Elige una categoría
