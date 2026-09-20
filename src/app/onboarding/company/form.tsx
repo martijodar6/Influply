@@ -36,8 +36,8 @@ export function CompanyOnboardingForm() {
         </Step>
 
         <Step index={1}>
-          <Field label="Descripción">
-            <Textarea name="description" placeholder="Cuéntanos qué hacéis y qué tipo de colaboraciones buscáis…" />
+          <Field label="Descripción" required>
+            <Textarea name="description" required placeholder="Cuéntanos qué hacéis y qué tipo de colaboraciones buscáis…" />
           </Field>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Field label="Página web">
