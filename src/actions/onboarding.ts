@@ -77,6 +77,13 @@ export async function completeCreatorOnboarding(_prev: FormState, formData: Form
   const avatarFile = fileOrNull(formData, 'avatar');
   if (!avatarFile) return { error: 'Sube una foto de perfil.' };
 
+  // Verification is optional at onboarding time (the last, skippable step):
+  // only persist it when the selfie was actually provided, and only ever
+  // alongside the code the user was shown on that same step — never a code
+  // with no evidence to match it against.
+  const verificationSelfieFile = fileOrNull(formData, 'verificationSelfie');
+  const verificationCodeInput = str(formData, 'verificationCode');
+
   const city = str(formData, 'city') || null;
   const languages = formData.getAll('languages').map(String);
   const priceApprox = str(formData, 'priceApprox') || null;
@@ -92,6 +99,19 @@ export async function completeCreatorOnboarding(_prev: FormState, formData: Form
   } catch (e) {
     return { error: e instanceof UploadError ? e.message : 'No se pudo subir la foto de perfil.' };
   }
+
+  // A failed selfie upload shouldn't block account creation — verification
+  // can always be finished later from the profile page — so this is a soft
+  // failure: skip it and continue, rather than returning an error.
+  let verificationSelfieUrl: string | null = null;
+  if (verificationSelfieFile) {
+    try {
+      verificationSelfieUrl = await saveUpload(verificationSelfieFile, 'verification-selfie');
+    } catch {
+      verificationSelfieUrl = null;
+    }
+  }
+  const verificationSubmitted = Boolean(verificationSelfieUrl && verificationCodeInput);
 
   const username = await uniqueUsername(displayName);
   const creatorId = randomUUID();
@@ -109,7 +129,10 @@ export async function completeCreatorOnboarding(_prev: FormState, formData: Form
     brandsWorkedWith: toJsonArray(brandsWorkedWith),
     priceApprox,
     availability,
-    onboardingDone: true
+    onboardingDone: true,
+    ...(verificationSubmitted
+      ? { verificationStatus: 'PENDING', verificationCode: verificationCodeInput, verificationSelfieUrl }
+      : {})
   });
 
   // Social networks: up to 4 fixed rows from the form (platform_i/handle_i/followers_i).
@@ -164,10 +187,18 @@ export async function completeCompanyOnboarding(_prev: FormState, formData: Form
   const category = str(formData, 'category');
   if (!category) return { error: 'Elige una categoría.' };
   const city = str(formData, 'city') || null;
-  const description = str(formData, 'description') || null;
+  const description = str(formData, 'description');
+  if (!description) return { error: 'Escribe una descripción de tu negocio.' };
   const website = str(formData, 'website') || null;
   const instagram = str(formData, 'instagram') || null;
   const tiktok = str(formData, 'tiktok') || null;
+
+  // Verification is optional at onboarding time (the last, skippable step) —
+  // only flip to PENDING when both pieces the admin needs are present,
+  // matching what /company/dashboard/profile requires when finishing it later.
+  const taxId = str(formData, 'taxId') || null;
+  const verificationProofUrl = str(formData, 'verificationProofUrl') || null;
+  const verificationSubmitted = Boolean(taxId && verificationProofUrl);
 
   let logoUrl: string | null = null;
   try {
@@ -208,7 +239,10 @@ export async function completeCompanyOnboarding(_prev: FormState, formData: Form
     tiktok,
     photos: toJsonArray(photos),
     videos: toJsonArray(videos),
-    onboardingDone: true
+    onboardingDone: true,
+    taxId,
+    verificationProofUrl,
+    ...(verificationSubmitted ? { verificationStatus: 'PENDING' } : {})
   });
 
   redirect('/company/dashboard?welcome=1');
