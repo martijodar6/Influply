@@ -7,13 +7,17 @@ import { Field, Input, Textarea, Select } from '@/components/ui/primitives';
 import { ChipCheckbox } from '@/components/ui/chip-checkbox';
 import { ImageFileInput } from '@/components/ui/file-input';
 import { CREATOR_CATEGORIES, LANGUAGES, SOCIAL_PLATFORMS, SOCIAL_PLATFORM_LABEL } from '@/lib/constants';
+import { VERIFICATION_CONTACT_HANDLE } from '@/lib/verification';
 
-export function CreatorOnboardingForm() {
+export function CreatorOnboardingForm({ verificationCode }: { verificationCode: string }) {
   const [state, formAction] = useFormState(completeCreatorOnboarding, null);
 
   return (
     <form action={formAction}>
-      <Stepper labels={['Datos básicos', 'Sobre ti', 'Redes sociales', 'Portfolio']} submitLabel="Terminar y ver mi dashboard">
+      <Stepper
+        labels={['Datos básicos', 'Sobre ti', 'Redes sociales', 'Portfolio', 'Verificación']}
+        submitLabel="Terminar y ver mi dashboard"
+      >
         <Step index={0}>
           <ImageFileInput name="avatar" label="Foto de perfil *" round />
           <Field label="Nombre completo" required>
@@ -87,6 +91,27 @@ export function CreatorOnboardingForm() {
               <Input name="availability" placeholder="p.ej. Disponible este mes" />
             </Field>
           </div>
+        </Step>
+
+        <Step index={4}>
+          <p className="text-sm text-ink-500">
+            Verificar tu cuenta ahora es opcional — los perfiles verificados generan más confianza, pero puedes dejarlo para
+            más tarde desde tu perfil si prefieres terminar rápido.
+          </p>
+          <ol className="list-decimal space-y-1.5 pl-5 text-sm text-ink-600">
+            <li>
+              Envía este código por mensaje directo (o coméntalo en nuestra última publicación) desde tu cuenta de Instagram o
+              TikTok a <b>{VERIFICATION_CONTACT_HANDLE}</b>:{' '}
+              <span className="rounded bg-brand-50 px-2 py-0.5 font-mono font-bold tracking-wider text-brand-700">
+                {verificationCode}
+              </span>
+            </li>
+            <li>Hazte una selfie sujetando ese código (escrito a mano o en la pantalla del móvil) y súbela abajo.</li>
+          </ol>
+          <input type="hidden" name="verificationCode" value={verificationCode} />
+          <Field label="Selfie con el código (opcional)">
+            <input type="file" name="verificationSelfie" accept="image/png,image/jpeg,image/webp" className="text-sm" />
+          </Field>
         </Step>
       </Stepper>
 
