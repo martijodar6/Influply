@@ -15,10 +15,20 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const secret = searchParams.get('secret');
-  const expected = process.env.SETUP_SECRET;
-  if (!expected || secret !== expected) {
-    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  // .trim() guards against an invisible trailing newline/space in the
+  // env var value (easy to introduce by copy-pasting into Vercel's UI),
+  // which would otherwise make a correct-looking secret never match.
+  const secret = searchParams.get('secret')?.trim();
+  const expected = process.env.SETUP_SECRET?.trim();
+  if (!expected || !secret || secret !== expected) {
+    return NextResponse.json({
+      error: 'forbidden',
+      debug: {
+        gotLength: secret?.length ?? 0,
+        expectedLength: expected?.length ?? 0,
+        expectedIsSet: Boolean(process.env.SETUP_SECRET)
+      }
+    }, { status: 403 });
   }
 
   const log: string[] = [];
