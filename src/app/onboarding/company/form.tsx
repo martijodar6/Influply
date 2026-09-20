@@ -12,7 +12,10 @@ export function CompanyOnboardingForm() {
 
   return (
     <form action={formAction}>
-      <Stepper labels={['Datos básicos', 'Sobre el negocio', 'Fotos y vídeos']} submitLabel="Terminar y ver mi dashboard">
+      <Stepper
+        labels={['Datos básicos', 'Sobre el negocio', 'Fotos y vídeos', 'Verificación']}
+        submitLabel="Terminar y ver mi dashboard"
+      >
         <Step index={0}>
           <ImageFileInput name="logo" label="Logo" round />
           <Field label="Nombre de la empresa" required>
@@ -65,6 +68,19 @@ export function CompanyOnboardingForm() {
               <Input name="video_url_0" placeholder="https://…" />
               <Input name="video_url_1" placeholder="https://…" />
             </div>
+          </Field>
+        </Step>
+
+        <Step index={3}>
+          <p className="text-sm text-ink-500">
+            Verificar tu empresa ahora es opcional — los perfiles verificados generan más confianza, pero puedes dejarlo para
+            más tarde desde tu perfil si prefieres terminar rápido.
+          </p>
+          <Field label="CIF / NIF (opcional)">
+            <Input name="taxId" placeholder="B12345678" />
+          </Field>
+          <Field label="Enlace de prueba (opcional)" hint="Ficha de Google Maps, web oficial, redes sociales del negocio…">
+            <Input name="verificationProofUrl" placeholder="https://maps.app.goo.gl/…" />
           </Field>
         </Step>
       </Stepper>
