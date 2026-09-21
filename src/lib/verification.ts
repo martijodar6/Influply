@@ -17,5 +17,4 @@ export function generateVerificationCode(length = 6): string {
 
 // The Influply account creators are asked to DM/comment their code to, and
 // the one companies are told to check against a business's own channels.
-// Swap this for the real handle before relying on this flow in production.
-export const VERIFICATION_CONTACT_HANDLE = '@influply.app';
+export const VERIFICATION_CONTACT_HANDLE = '@infuply';
