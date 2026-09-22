@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { eq, and } from 'drizzle-orm';
 import { db } from '@/db';
 import { campaigns, companyProfiles, applications, creatorProfiles, favorites, notifications } from '@/db/schema';
-import { getCurrentUser, requireRole } from '@/lib/session';
+import { requireRole, requireVerifiedUser } from '@/lib/session';
 import { saveUpload, UploadError } from '@/lib/storage';
 import { toJsonArray, toJsonObject } from '@/lib/json';
 import type { FormState } from '@/actions/onboarding';
@@ -111,8 +111,7 @@ export async function setCampaignStatus(campaignId: string, status: 'ACTIVE' | '
 export type ApplyState = { error?: string; success?: boolean } | null;
 
 export async function applyToCampaign(_prev: ApplyState, formData: FormData): Promise<ApplyState> {
-  const user = await getCurrentUser();
-  if (!user) redirect('/login');
+  const user = await requireVerifiedUser();
   if (user.role !== 'CREATOR') return { error: 'Solo los creadores pueden aplicar a campañas.' };
 
   const campaignId = str(formData, 'campaignId');
@@ -178,8 +177,7 @@ export async function decideApplication(applicationId: string, decision: 'ACCEPT
 }
 
 export async function toggleFavorite(targetType: 'CREATOR' | 'CAMPAIGN', targetId: string) {
-  const user = await getCurrentUser();
-  if (!user) redirect('/login');
+  const user = await requireVerifiedUser();
 
   const existing = await db.query.favorites.findFirst({
     where: and(eq(favorites.userId, user.id), eq(favorites.targetType, targetType), eq(favorites.targetId, targetId))

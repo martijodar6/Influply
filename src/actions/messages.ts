@@ -6,12 +6,11 @@ import { redirect } from 'next/navigation';
 import { eq, and, ne } from 'drizzle-orm';
 import { db } from '@/db';
 import { creatorProfiles, companyProfiles, conversations, messages, notifications } from '@/db/schema';
-import { getCurrentUser, requireUser } from '@/lib/session';
+import { requireVerifiedUser } from '@/lib/session';
 
 /** Called from a creator's public profile by a signed-in company. Opens (or creates) the conversation and sends there. */
 export async function startConversationWithCreator(creatorId: string) {
-  const user = await getCurrentUser();
-  if (!user) redirect('/login');
+  const user = await requireVerifiedUser();
   if (user.role !== 'COMPANY') return;
 
   const company = await db.query.companyProfiles.findFirst({ where: eq(companyProfiles.userId, user.id) });
@@ -31,8 +30,7 @@ export async function startConversationWithCreator(creatorId: string) {
 
 /** Called from a company's public profile by a signed-in creator. Opens (or creates) the conversation and sends there. */
 export async function startConversationWithCompany(companyId: string) {
-  const user = await getCurrentUser();
-  if (!user) redirect('/login');
+  const user = await requireVerifiedUser();
   if (user.role !== 'CREATOR') return;
 
   const creator = await db.query.creatorProfiles.findFirst({ where: eq(creatorProfiles.userId, user.id) });
@@ -51,7 +49,7 @@ export async function startConversationWithCompany(companyId: string) {
 }
 
 export async function sendMessage(conversationId: string, body: string) {
-  const user = await requireUser();
+  const user = await requireVerifiedUser();
   const trimmed = body.trim();
   if (!trimmed) return;
 
@@ -89,6 +87,6 @@ export async function sendMessage(conversationId: string, body: string) {
 
 /** Marks every message from the other party as read. Called when opening a thread. */
 export async function markConversationRead(conversationId: string) {
-  const user = await requireUser();
+  const user = await requireVerifiedUser();
   await db.update(messages).set({ read: true }).where(and(eq(messages.conversationId, conversationId), ne(messages.senderUserId, user.id)));
 }
