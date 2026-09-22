@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { PublicNavbar } from '@/components/public-navbar';
 import { CampaignCard } from '@/components/campaign-card';
 import { CampaignFilters } from '@/components/campaign-filters';
@@ -20,6 +21,9 @@ export default async function CampaignsPage({ searchParams }: { searchParams: { 
       </div>
     );
   }
+  // Logged in but hasn't confirmed the code sent to their email yet — same
+  // gate requireRole() would apply to any other role-gated page.
+  if (!user.emailVerified) redirect('/verify-email');
 
   const campaigns = await listActiveCampaignCards().catch(() => []);
   const q = typeof searchParams.q === 'string' ? searchParams.q.toLowerCase() : '';
