@@ -24,3 +24,15 @@ export async function requireRole(role: 'CREATOR' | 'COMPANY' | 'ADMIN') {
   if (!user.emailVerified) redirect('/verify-email');
   return user;
 }
+
+/**
+ * Use at the top of a page/action open to any signed-in role (browsing
+ * creators/companies, applying to campaigns, messaging...) that still
+ * requires a confirmed email — the same check requireRole() does, but
+ * without pinning the caller to one role.
+ */
+export async function requireVerifiedUser() {
+  const user = await requireUser();
+  if (!user.emailVerified) redirect('/verify-email');
+  return user;
+}
