@@ -1,21 +1,23 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { clsx } from 'clsx';
 
-// Inline recreation of the Influply mark (two overlapping figures, indigo →
-// violet) so it renders crisp at any size with no image request.
+// Source asset (public/logo-mark.png) is 480x375 — not a square mark, so
+// `size` is treated as the height and the width follows this ratio to
+// avoid stretching it.
+const MARK_ASPECT_RATIO = 480 / 375;
+
 export function LogoMark({ size = 28 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden="true">
-      <circle cx="12" cy="9" r="5" fill="#5a45e8" />
-      <circle cx="25" cy="9" r="4.5" fill="#b9a6ff" />
-      <path
-        d="M4 34c0-8 6-13 15-13 3.2 0 6 .8 8.2 2.2L18.4 32c-.9.9-2.4.9-3.3 0l-3-3"
-        stroke="#5a45e8"
-        strokeWidth="6"
-        strokeLinecap="round"
-      />
-      <path d="M36 34c0-6.5-3.8-11-9.6-12.6" stroke="#b9a6ff" strokeWidth="6" strokeLinecap="round" />
-    </svg>
+    <Image
+      src="/logo-mark.png"
+      alt=""
+      aria-hidden="true"
+      width={Math.round(size * MARK_ASPECT_RATIO)}
+      height={size}
+      priority
+      className="select-none"
+    />
   );
 }
 
